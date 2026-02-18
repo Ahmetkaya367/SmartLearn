@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://user-db:5432/user_db
+    username: user
+    password: password
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  kafka:
+    bootstrap-servers: kafka:9092
+    consumer:
+      group-id: user-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer

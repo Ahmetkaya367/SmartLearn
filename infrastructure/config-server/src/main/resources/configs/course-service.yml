@@ -1,0 +1,14 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://course-db:5432/coursedb
+    username: smartuser
+    password: smartpass
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
