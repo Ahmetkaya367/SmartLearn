@@ -5,11 +5,11 @@ services:
   postgres:
     image: postgres:15-alpine
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_MULTIPLE_DATABASES: auth_db,user_db,course_db,order_db,payment_db,enrollment_db
+      POSTGRES_USER: smartuser
+      POSTGRES_PASSWORD: smartpass
+      POSTGRES_MULTIPLE_DATABASES: authdb,user_db,coursedb,orderdb,paymentdb,enrollmentdb,notificationdb
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./infra/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
@@ -60,6 +60,13 @@ services:
     build: ./infrastructure/eureka-server
     ports:
       - "8761:8761"
+    environment:
+      EUREKA_INSTANCE_HOSTNAME: eureka-server
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8761/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - smartlearn-network
 
@@ -68,9 +75,15 @@ services:
     ports:
       - "8888:8888"
     depends_on:
-      - eureka-server
+      eureka-server:
+        condition: service_healthy
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8888/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - smartlearn-network
 
@@ -79,8 +92,10 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - eureka-server
-      - config-server
+      eureka-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
@@ -91,11 +106,16 @@ services:
   auth-service:
     build: ./services/auth-service
     depends_on:
-      - postgres
-      - kafka
-      - config-server
+      postgres:
+        condition: service_started
+      kafka:
+        condition: service_started
+      config-server:
+        condition: service_healthy
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/auth_db
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/authdb
+      SPRING_DATASOURCE_USERNAME: smartuser
+      SPRING_DATASOURCE_PASSWORD: smartpass
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
@@ -105,11 +125,16 @@ services:
   user-service:
     build: ./services/user-service
     depends_on:
-      - postgres
-      - kafka
-      - config-server
+      postgres:
+        condition: service_started
+      kafka:
+        condition: service_started
+      config-server:
+        condition: service_healthy
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/user_db
+      SPRING_DATASOURCE_USERNAME: smartuser
+      SPRING_DATASOURCE_PASSWORD: smartpass
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
@@ -119,11 +144,16 @@ services:
   course-service:
     build: ./services/course-service
     depends_on:
-      - postgres
-      - kafka
-      - config-server
+      postgres:
+        condition: service_started
+      kafka:
+        condition: service_started
+      config-server:
+        condition: service_healthy
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/course_db
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/coursedb
+      SPRING_DATASOURCE_USERNAME: smartuser
+      SPRING_DATASOURCE_PASSWORD: smartpass
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"

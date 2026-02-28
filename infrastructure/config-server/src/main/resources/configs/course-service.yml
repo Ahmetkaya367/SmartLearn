@@ -1,11 +1,11 @@
 spring:
   datasource:
-    url: jdbc:postgresql://course-db:5432/coursedb
+    url: jdbc:postgresql://postgres:5432/coursedb
     username: smartuser
     password: smartpass
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect

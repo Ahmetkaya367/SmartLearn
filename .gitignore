@@ -1,5 +1,29 @@
 # OS
 .DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+
+# Build artifacts
+target/
+build/
+out/
+bin/
+dependency-reduced-pom.xml
+*.class
+
+# Docker Data (Postgres gibi volume’ler)
+postgres_data/
+
+# Environment / Secrets
+.env
+.env.local
+*.secret# OS
+.DS_Store
 
 # IDE
 .idea/
