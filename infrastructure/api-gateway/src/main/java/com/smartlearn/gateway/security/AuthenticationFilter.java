@@ -24,6 +24,21 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
             ServerHttpRequest request = exchange.getRequest();
+            String path = request.getPath().toString();
+            String method = request.getMethod().name();
+
+            // Skip authentication for public endpoints
+            // GET /api/courses and GET /api/courses/{id} are public
+            // BUT GET /api/courses/all is NOT public
+            boolean isPublicCoursePath = path.startsWith("/api/courses") 
+                && !path.equals("/api/courses/all") 
+                && !path.startsWith("/api/courses/instructor")
+                && !path.startsWith("/api/courses/me")
+                && method.equals("GET");
+
+            if (isPublicCoursePath) {
+                return chain.filter(exchange);
+            }
 
             if (!request.getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
                 return onError(exchange, "Missing Authorization Header", HttpStatus.UNAUTHORIZED);
@@ -39,13 +54,25 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
                 return onError(exchange, "Invalid Token", HttpStatus.UNAUTHORIZED);
             }
 
-            // Populate User Info to Headers for downstream services
-            ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
-                    .header("X-User-Id", jwtUtils.extractUserId(token))
-                    .header("X-User-Role", jwtUtils.extractRole(token))
-                    .build();
+            try {
+                String userId = jwtUtils.extractUserId(token);
+                String role = jwtUtils.extractRole(token);
+                
+                if (userId == null) {
+                    System.err.println("WARNING: UserId missing in valid token. This might be an old token format.");
+                }
 
-            return chain.filter(exchange.mutate().request(mutatedRequest).build());
+                // Populate User Info to Headers for downstream services
+                ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
+                        .header("X-User-Id", userId != null ? userId : "")
+                        .header("X-User-Role", role != null ? role : "")
+                        .build();
+
+                return chain.filter(exchange.mutate().request(mutatedRequest).build());
+            } catch (Exception e) {
+                System.err.println("CRITICAL ERROR in AuthenticationFilter: " + e.getMessage());
+                return onError(exchange, "Authentication Processing Error", HttpStatus.INTERNAL_SERVER_ERROR);
+            }
         };
     }
 

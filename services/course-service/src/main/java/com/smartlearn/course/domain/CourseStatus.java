@@ -1,5 +1,5 @@
 package com.smartlearn.course.domain;
 
 public enum CourseStatus {
-    DRAFT, PUBLISHED, ARCHIVED
+    DRAFT, PUBLISHED, PENDING_APPROVAL, ARCHIVED
 }

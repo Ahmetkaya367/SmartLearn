@@ -43,7 +43,49 @@ public class Course {
     @Builder.Default
     private CourseStatus status = CourseStatus.DRAFT;
 
+    private String category;
+    private String level;
+    private int studentCount;
+    private double rating;
+    private int reviewCount;
+    private String duration;
+    @Column(name = "is_bestseller")
+    private boolean isBestseller;
+
+    @Column(name = "thumbnail_url")
     private String thumbnailUrl;
+
+    @Column(name = "video_preview_url")
+    private String videoPreviewUrl;
+
+    @Column(name = "long_description", length = 5000)
+    private String longDescription;
+
+    @ElementCollection
+    @CollectionTable(name = "learning_outcomes", joinColumns = @JoinColumn(name = "course_id"))
+    @Column(name = "outcome")
+    private List<String> learningOutcomes;
+
+    @ElementCollection
+    @CollectionTable(name = "course_requirements", joinColumns = @JoinColumn(name = "course_id"))
+    @Column(name = "requirement")
+    private List<String> requirements;
+
+    @ElementCollection
+    @CollectionTable(name = "target_audience", joinColumns = @JoinColumn(name = "course_id"))
+    @Column(name = "audience")
+    private List<String> targetAudience;
+
+    private String instructorBio;
+    private String instructorImage;
+    private String instructorTitle;
+    private int instructorStudents;
+    private int instructorCourses;
+    private double instructorRating;
+
+    private String language;
+    private String lastUpdated;
+    private boolean certificateIncluded;
 
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

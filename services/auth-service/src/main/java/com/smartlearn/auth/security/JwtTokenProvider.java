@@ -30,7 +30,6 @@ public class JwtTokenProvider {
 
     public String generateToken(Authentication authentication) {
         UserDetails userPrincipal = (UserDetails) authentication.getPrincipal();
-        // Pack role in claims for Gateway/Downstream
         Map<String, Object> claims = new HashMap<>();
         claims.put("role",
                 userPrincipal.getAuthorities().stream().findFirst().map(a -> a.getAuthority()).orElse("ROLE_STUDENT"));
@@ -46,9 +45,18 @@ public class JwtTokenProvider {
     }
 
     private String buildToken(Map<String, Object> extraClaims, UserDetails userDetails, long expiration) {
+        Map<String, Object> claims = new HashMap<>(extraClaims);
+        
+        if (userDetails instanceof UserPrincipal customUser) {
+            claims.put("userId", customUser.getId().toString());
+        } else {
+            log.warn("userDetails is not UserPrincipal, userId claim might be missing. Type: {}", 
+                userDetails != null ? userDetails.getClass().getName() : "null");
+        }
+
         return Jwts.builder()
-                .setClaims(extraClaims)
-                .setSubject(userDetails.getUsername())
+                .setClaims(claims)
+                .setSubject(userDetails != null ? userDetails.getUsername() : "anonymous")
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSignInKey(), SignatureAlgorithm.HS256)

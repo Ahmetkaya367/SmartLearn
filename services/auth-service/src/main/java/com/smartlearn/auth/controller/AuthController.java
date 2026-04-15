@@ -7,10 +7,9 @@ import com.smartlearn.auth.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -27,5 +26,14 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.ok(authService.register(request));
+    }
+
+    @PostMapping("/users/{id}/status")
+    public ResponseEntity<Void> updateUserStatus(
+            @PathVariable UUID id, 
+            @RequestParam boolean active, 
+            @RequestParam String status) {
+        authService.updateUserStatus(id, active, status);
+        return ResponseEntity.ok().build();
     }
 }

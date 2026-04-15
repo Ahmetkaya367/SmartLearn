@@ -1,5 +1,4 @@
-version: '3.8'
-
+# SmartLearn Microservices Infrastructure
 services:
   # Infrastructure
   postgres:
@@ -7,12 +6,13 @@ services:
     environment:
       POSTGRES_USER: smartuser
       POSTGRES_PASSWORD: smartpass
-      POSTGRES_MULTIPLE_DATABASES: authdb,user_db,coursedb,orderdb,paymentdb,enrollmentdb,notificationdb
+      POSTGRES_MULTIPLE_DATABASES: authdb,userdb,coursedb,orderdb,paymentdb,enrollmentdb,notificationdb
     ports:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./infra/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+      - ./infra/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+
     networks:
       - smartlearn-network
 
@@ -99,6 +99,7 @@ services:
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
+      APP_JWT_SECRET: 5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437
     networks:
       - smartlearn-network
 
@@ -119,6 +120,7 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
+      APP_JWT_SECRET: 5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437
     networks:
       - smartlearn-network
 
@@ -132,12 +134,13 @@ services:
       config-server:
         condition: service_healthy
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/user_db
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/userdb
       SPRING_DATASOURCE_USERNAME: smartuser
       SPRING_DATASOURCE_PASSWORD: smartpass
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
+      APP_JWT_SECRET: 5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437
     networks:
       - smartlearn-network
 
@@ -157,6 +160,26 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
+    volumes:
+      - ./uploads:/app/uploads
+    networks:
+      - smartlearn-network
+
+  enrollment-service:
+    build: ./services/enrollment-service
+    depends_on:
+      postgres:
+        condition: service_started
+      kafka:
+        condition: service_started
+      config-server:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/enrollmentdb
+      SPRING_DATASOURCE_USERNAME: smartuser
+      SPRING_DATASOURCE_PASSWORD: smartpass
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
     networks:
       - smartlearn-network
 

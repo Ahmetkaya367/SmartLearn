@@ -1,42 +1,25 @@
-# OS
-.DS_Store
-Thumbs.db
+# Media & Uploads
+uploads/
+my-videos/
+minio_data/
+*.mp4
+*.mov
+*.avi
+*.jpg
+*.png
 
-# IDE
-.idea/
-.vscode/
-*.iml
-*.iws
-
-# Build artifacts
+# Build & Dependencies
 target/
 build/
-out/
+node_modules/
+.gradle/
 bin/
-dependency-reduced-pom.xml
-*.class
 
-# Docker Data (Postgres gibi volume’ler)
-postgres_data/
-
-# Environment / Secrets
-.env
-.env.local
-*.secret# OS
-.DS_Store
-
-# IDE
+# IDE & OS
 .idea/
 .vscode/
+.DS_Store
+*.iml
 
-# Logs
-*.log
-
-# Build
-target/
-build/
-out/
-
-# Env
+# Sensitive Data
 .env
-

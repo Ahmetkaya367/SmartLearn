@@ -31,6 +31,9 @@ public class UserProfile {
     private String bio;
     private String avatarUrl;
 
+    @Builder.Default
+    private String status = "ACTIVE"; // ACTIVE, PENDING, FROZEN, BANNED
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

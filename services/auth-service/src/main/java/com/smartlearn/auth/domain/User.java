@@ -38,6 +38,9 @@ public class User {
     @Builder.Default
     private boolean active = true;
 
+    @Builder.Default
+    private String status = "ACTIVE"; // ACTIVE, BANNED
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

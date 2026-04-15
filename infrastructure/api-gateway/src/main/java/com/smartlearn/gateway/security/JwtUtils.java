@@ -3,6 +3,7 @@ package com.smartlearn.gateway.security;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.io.Decoders;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -21,7 +22,10 @@ public class JwtUtils {
 
     @PostConstruct
     public void init() {
-        this.key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+        // Docker'dan gelen anahtarın yüklendiğinden emin oluyoruz
+        System.out.println("DEBUG: Gateway secret key loading...");
+        byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
+        this.key = Keys.hmacShaKeyFor(keyBytes);
     }
 
     public boolean validateToken(String token) {
@@ -29,12 +33,22 @@ public class JwtUtils {
             Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
             return !isTokenExpired(token);
         } catch (Exception e) {
+            // Hata nedenini loglarda görmek için:
+            System.err.println("JWT Validation Error: " + e.getMessage());
             return false;
         }
     }
 
     public String extractUserId(String token) {
-        return extractClaim(token, Claims::getSubject);
+        try {
+            return extractClaim(token, claims -> {
+                Object userId = claims.get("userId");
+                return userId != null ? String.valueOf(userId) : null;
+            });
+        } catch (Exception e) {
+            System.err.println("Error extracting userId from token: " + e.getMessage());
+            return null;
+        }
     }
 
     public String extractRole(String token) {

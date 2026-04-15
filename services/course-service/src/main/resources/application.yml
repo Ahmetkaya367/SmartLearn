@@ -1,7 +1,15 @@
+server:
+  tomcat:
+    max-swallow-size: 500MB
+    max-http-form-post-size: 500MB
 spring:
   application:
     name: course-service
   config:
     import: "optional:configserver:${SPRING_CONFIG_IMPORT_URL:http://localhost:8888}"
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB
   profiles:
     active: dev

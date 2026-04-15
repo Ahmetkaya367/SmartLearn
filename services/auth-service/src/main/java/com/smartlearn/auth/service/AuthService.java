@@ -6,7 +6,6 @@ import com.smartlearn.auth.dto.LoginRequest;
 import com.smartlearn.auth.dto.RegisterRequest;
 import com.smartlearn.auth.repository.UserRepository;
 import com.smartlearn.auth.security.JwtTokenProvider;
-import com.smartlearn.events.PaymentInitiatedEvent; // Testing import, but we need UserCreatedEvent
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -19,6 +18,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -30,6 +31,13 @@ public class AuthService {
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
     public AuthResponse login(LoginRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (!user.isActive() || "BANNED".equals(user.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Hesabınız banlanmıştır 1 gün sonra yeniden deneyin");
+        }
+
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
 
@@ -46,10 +54,13 @@ public class AuthService {
         kafkaTemplate.send("auth.login", request.getEmail());
 
         return AuthResponse.builder()
+                .id(user.getId().toString())
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
-                .email(userDetails.getUsername())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
                 .role(role)
+                .avatarUrl(null)
                 .build();
     }
 
@@ -64,14 +75,22 @@ public class AuthService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(request.getRole() != null ? "ROLE_" + request.getRole() : "ROLE_STUDENT")
                 .active(true)
+                .status("ACTIVE")
                 .build();
 
         userRepository.save(user);
 
         // Publish User Created Event
-        // In a real app we'd use a specific UserCreatedEvent DTO
         kafkaTemplate.send("user.created", user.getId().toString());
 
         return login(new LoginRequest(request.getEmail(), request.getPassword()));
+    }
+
+    public void updateUserStatus(UUID id, boolean active, String status) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        user.setActive(active);
+        user.setStatus(status);
+        userRepository.save(user);
     }
 }
