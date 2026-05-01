@@ -1,3 +1,5 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router";
 import { Card } from "@/react-app/components/ui/card";
 import { Button } from "@/react-app/components/ui/button";
 import { Input } from "@/react-app/components/ui/input";
@@ -10,9 +12,54 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/react-app/components/ui/select";
-import { Save, Upload, Plus } from "lucide-react";
+import { Save, Loader2 } from "lucide-react";
+import { apiService } from "@/react-app/lib/apiService";
 
 export default function InstructorNewCourse() {
+    const navigate = useNavigate();
+    const [loading, setLoading] = useState(false);
+    const [courseData, setCourseData] = useState({
+        title: "",
+        description: "",
+        category: "",
+        level: "Başlangıç",
+        price: 0
+    });
+    const [categories, setCategories] = useState<string[]>([]);
+
+    useEffect(() => {
+        apiService.getCategories().then(setCategories);
+    }, []);
+
+    const handleContinue = async () => {
+        if (!courseData.title.trim()) {
+            alert("Lütfen kurs başlığını girin.");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            // Backend CreateCourseRequest modeline uygun veriyi gönderiyoruz
+            // İçermediğimiz status gibi ekstra property'ler 400 hatasına sebep olabilir
+            const requestPayload = {
+                title: courseData.title,
+                description: courseData.description,
+                category: courseData.category,
+                level: courseData.level,
+                price: courseData.price,
+                thumbnail: ""
+            };
+            const newCourse = await apiService.createCourse(requestPayload);
+            // Varsayılan olarak courses/:id/edit rotasına yönlendir
+            navigate(`/instructor/courses/${newCourse.id}/edit`);
+        } catch (error) {
+            console.error("Kurs oluşturulamadı", error);
+            alert("Kurs oluşturulurken bir hata oluştu.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="p-8 space-y-8 max-w-4xl">
             <div>
@@ -25,31 +72,41 @@ export default function InstructorNewCourse() {
                     <div className="space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="title">Kurs Başlığı</Label>
-                            <Input id="title" placeholder="Örn: Sıfırdan İleri Seviye React" />
+                            <Input 
+                                id="title" 
+                                placeholder="Örn: Sıfırdan İleri Seviye React" 
+                                value={courseData.title}
+                                onChange={(e) => setCourseData({...courseData, title: e.target.value})}
+                            />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="desc">Kısa Açıklama</Label>
-                            <Textarea id="desc" placeholder="Öğrencilerin neden bu kursu alması gerektiğini açıklayın." />
+                            <Textarea 
+                                id="desc" 
+                                placeholder="Öğrencilerin neden bu kursu alması gerektiğini açıklayın." 
+                                value={courseData.description}
+                                onChange={(e) => setCourseData({...courseData, description: e.target.value})}
+                            />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="space-y-2">
                             <Label>Kategori</Label>
-                            <Select>
+                            <Select value={courseData.category} onValueChange={(val) => setCourseData({...courseData, category: val})}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Seçiniz" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="dev">Yazılım</SelectItem>
-                                    <SelectItem value="design">Tasarım</SelectItem>
-                                    <SelectItem value="biz">İşletme</SelectItem>
+                                    {categories.map((cat) => (
+                                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
                         <div className="space-y-2">
                             <Label>Seviye</Label>
-                            <Select>
+                            <Select value={courseData.level} onValueChange={(val) => setCourseData({...courseData, level: val})}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Seçiniz" />
                                 </SelectTrigger>
@@ -61,31 +118,26 @@ export default function InstructorNewCourse() {
                             </Select>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="price">Fiyat ($)</Label>
-                            <Input id="price" type="number" placeholder="0.00" />
-                        </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label>Kurs Görseli</Label>
-                        <div className="border-2 border-dashed rounded-lg p-12 text-center space-y-4 hover:border-primary/50 transition-colors cursor-pointer">
-                            <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                                <Upload className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <p className="font-medium">Dosya yüklemek için tıklayın</p>
-                                <p className="text-sm text-muted-foreground">SVG, PNG, JPG veya GIF (max. 800x400px)</p>
-                            </div>
+                            <Label htmlFor="price">Fiyat (₺)</Label>
+                            <Input 
+                                id="price" 
+                                type="number" 
+                                placeholder="0.00" 
+                                value={courseData.price || ""}
+                                onChange={(e) => setCourseData({...courseData, price: parseFloat(e.target.value) || 0})}
+                            />
                         </div>
                     </div>
 
                     <div className="flex items-center justify-between pt-6 border-t font-semibold">
-                        <Button variant="ghost">İptal</Button>
+                        <Button variant="ghost" onClick={() => navigate("/instructor/my-courses")}>İptal</Button>
                         <div className="flex gap-3">
-                            <Button variant="outline" className="gap-2">
-                                <Save className="w-4 h-4" /> Taslağı Kaydet
-                            </Button>
-                            <Button className="gap-2">
+                            <Button 
+                                className="gap-2" 
+                                onClick={handleContinue}
+                                disabled={loading || !courseData.title || !courseData.category || !courseData.level}
+                            >
+                                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                                 Devam Et
                             </Button>
                         </div>

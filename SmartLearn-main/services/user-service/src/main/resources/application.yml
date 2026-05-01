@@ -1,0 +1,17 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: user-service
+  config:
+    import: "optional:configserver:${SPRING_CONFIG_IMPORT_URL:http://localhost:8888}"
+  profiles:
+    active: dev
+logging:
+  level:
+    com.smartlearn.user: DEBUG
+
+app:
+  jwt:
+    secret: ${APP_JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}

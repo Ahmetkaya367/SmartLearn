@@ -5,20 +5,41 @@ import { Skeleton } from "@/react-app/components/ui/skeleton";
 import { Plus, Video, Users, DollarSign } from "lucide-react";
 import { apiService } from "@/react-app/lib/apiService";
 import { CourseCard } from "@/react-app/components/CourseCard";
+import { useAuthStore } from "@/react-app/store/useAuthStore";
 
 export default function InstructorDashboard() {
+  const { user } = useAuthStore();
   const [stats, setStats] = useState<any>(null);
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!user?.id) return;
       try {
-        const [statsData, myCourses] = await Promise.all([
+        const [statsData, myCourses, earningsData] = await Promise.all([
           apiService.getInstructorStats(),
-          apiService.getInstructorCourses()
+          apiService.getInstructorCourses(),
+          apiService.getInstructorEarnings(user.id)
         ]);
-        setStats(statsData);
+
+        // Earnings verisiyle Dashboard verisini ez (Senkronize et)
+        let finalStats = { ...statsData };
+        if (earningsData) {
+            // Frontend Fallback (Eğer backend 0 dönerse listeden hesapla)
+            let currentMonthRevenue = earningsData.thisMonthRevenue || 0;
+            if (currentMonthRevenue === 0 && earningsData.transactions) {
+                const todayPrefix = new Date().toISOString().split('T')[0];
+                currentMonthRevenue = earningsData.transactions
+                    .filter((tr: any) => tr.date.startsWith(todayPrefix))
+                    .reduce((sum: number, tr: any) => sum + (tr.amount || 0), 0);
+            }
+
+            finalStats.totalRevenue = earningsData.totalBalance || 0;
+            finalStats.thisMonthRevenue = currentMonthRevenue;
+        }
+
+        setStats(finalStats);
         setCourses(myCourses);
       } catch (error) {
         console.error("Failed to fetch instructor dashboard data:", error);
@@ -27,7 +48,7 @@ export default function InstructorDashboard() {
       }
     };
     fetchData();
-  }, []);
+  }, [user?.id]);
 
   if (loading) {
     return (
@@ -57,16 +78,12 @@ export default function InstructorDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-4xl font-bold text-foreground mb-2">
-                Instructor Dashboard
+                Eğitmen Paneli
               </h1>
               <p className="text-lg text-muted-foreground">
-                Manage your courses and track your success
+                Kurslarınızı yönetin ve başarınızı takip edin
               </p>
             </div>
-            <Button size="lg" className="gap-2">
-              <Plus className="w-5 h-5" />
-              Create Course
-            </Button>
           </div>
         </div>
       </div>
@@ -80,8 +97,8 @@ export default function InstructorDashboard() {
                 <Video className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{stats?.totalCourses}</p>
-                <p className="text-sm text-muted-foreground">Total Courses</p>
+                <p className="text-2xl font-bold text-foreground">{stats?.totalCourses || 0}</p>
+                <p className="text-sm text-muted-foreground">Toplam Kurs</p>
               </div>
             </div>
           </Card>
@@ -92,8 +109,8 @@ export default function InstructorDashboard() {
                 <Users className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{stats?.totalStudents.toLocaleString()}</p>
-                <p className="text-sm text-muted-foreground">Total Students</p>
+                <p className="text-2xl font-bold text-foreground">{(stats?.totalStudents || 0).toLocaleString()}</p>
+                <p className="text-sm text-muted-foreground">Toplam Öğrenci</p>
               </div>
             </div>
           </Card>
@@ -104,8 +121,8 @@ export default function InstructorDashboard() {
                 <DollarSign className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">${stats?.totalRevenue.toLocaleString()}</p>
-                <p className="text-sm text-muted-foreground">Total Revenue</p>
+                <p className="text-2xl font-bold text-foreground">{(stats?.totalRevenue || 0).toLocaleString()} ₺</p>
+                <p className="text-sm text-muted-foreground">Toplam Kazanç</p>
               </div>
             </div>
           </Card>
@@ -116,8 +133,8 @@ export default function InstructorDashboard() {
                 <DollarSign className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">${stats?.thisMonthRevenue.toLocaleString()}</p>
-                <p className="text-sm text-muted-foreground">This Month</p>
+                <p className="text-2xl font-bold text-foreground">{(stats?.thisMonthRevenue || 0).toLocaleString()} ₺</p>
+                <p className="text-sm text-muted-foreground">Bu Ay</p>
               </div>
             </div>
           </Card>
@@ -126,7 +143,7 @@ export default function InstructorDashboard() {
         {/* My Courses */}
         <div>
           <h2 className="text-2xl font-bold text-foreground mb-6">
-            My Courses
+            Kurslarım
           </h2>
           {courses.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -137,12 +154,8 @@ export default function InstructorDashboard() {
           ) : (
             <Card className="p-12 text-center">
               <p className="text-muted-foreground mb-4">
-                You haven't created any courses yet
+                Henüz bir kurs oluşturmadınız.
               </p>
-              <Button className="gap-2">
-                <Plus className="w-4 h-4" />
-                Create Your First Course
-              </Button>
             </Card>
           )}
         </div>

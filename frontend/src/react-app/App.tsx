@@ -1,3 +1,4 @@
+import StudentMessages from "@/react-app/pages/StudentMessages";
 import { BrowserRouter as Router, Routes, Route } from "react-router";
 import { Layout } from "@/react-app/components/Layout";
 import { DashboardLayout } from "@/react-app/components/DashboardLayout";
@@ -7,6 +8,7 @@ import CoursesPage from "@/react-app/pages/Courses";
 import CourseDetailPage from "@/react-app/pages/CourseDetail";
 import LoginPage from "@/react-app/pages/Login";
 import RegisterPage from "@/react-app/pages/Register";
+import CartPage from "@/react-app/pages/Cart";
 
 // Dashboards
 import StudentDashboardPage from "@/react-app/pages/StudentDashboard";
@@ -26,21 +28,45 @@ import InstructorEditCourse from "@/react-app/pages/InstructorEditCourse";
 import InstructorStudents from "@/react-app/pages/InstructorStudents";
 import InstructorEarnings from "@/react-app/pages/InstructorEarnings";
 import InstructorMessages from "@/react-app/pages/InstructorMessages";
+import InstructorUploadCertificate from "@/react-app/pages/InstructorUploadCertificate";
+import InstructorProfile from "@/react-app/pages/InstructorProfile";
 
 // Student Sub-pages
 import StudentCertificates from "@/react-app/pages/StudentCertificates";
 import StudentCourseViewer from "@/react-app/pages/StudentCourseViewer";
 import StudentProfile from "@/react-app/pages/StudentProfile";
 
+// Info Pages
+import PrivacyPolicy from "@/react-app/pages/info/PrivacyPolicy";
+import TermsOfService from "@/react-app/pages/info/TermsOfService";
+import FAQ from "@/react-app/pages/info/FAQ";
+import Contact from "@/react-app/pages/info/Contact";
+import CookiePolicy from "@/react-app/pages/info/CookiePolicy";
+
+import ScrollToTop from "@/react-app/components/ScrollToTop";
+import { Toaster } from "sonner";
+
+import AIAssistantPage from "@/react-app/pages/AIAssistant";
+
 export default function App() {
   return (
     <Router>
+      <Toaster position="top-right" richColors />
+      <ScrollToTop />
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/courses" element={<CoursesPage />} />
           <Route path="/courses/:id" element={<CourseDetailPage />} />
+          <Route path="/cart" element={<CartPage />} />
+          <Route path="/ai-assistant" element={<AIAssistantPage />} />
           <Route path="/learning/:id" element={<ProtectedRoute allowedRoles={["student"]}><StudentCourseViewer /></ProtectedRoute>} />
+          
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/faq" element={<FAQ />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/cookies" element={<CookiePolicy />} />
 
           {/* Protected Dashboard Routes */}
           <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
@@ -49,6 +75,7 @@ export default function App() {
             <Route path="/student">
               <Route index element={<ProtectedRoute allowedRoles={["student"]}><StudentDashboardPage /></ProtectedRoute>} />
               <Route path="certificates" element={<ProtectedRoute allowedRoles={["student"]}><StudentCertificates /></ProtectedRoute>} />
+              <Route path="messages" element={<ProtectedRoute allowedRoles={["student"]}><StudentMessages /></ProtectedRoute>} />
               <Route path="profile" element={<ProtectedRoute allowedRoles={["student"]}><StudentProfile /></ProtectedRoute>} />
             </Route>
 
@@ -59,8 +86,10 @@ export default function App() {
               <Route path="courses/:id/edit" element={<ProtectedRoute allowedRoles={["instructor"]}><InstructorEditCourse /></ProtectedRoute>} />
               <Route path="new" element={<ProtectedRoute allowedRoles={["instructor"]}><InstructorNewCourse /></ProtectedRoute>} />
               <Route path="students" element={<ProtectedRoute allowedRoles={["instructor"]}><InstructorStudents /></ProtectedRoute>} />
+              <Route path="students/:enrollmentId/upload-certificate" element={<ProtectedRoute allowedRoles={["instructor"]}><InstructorUploadCertificate /></ProtectedRoute>} />
               <Route path="earnings" element={<ProtectedRoute allowedRoles={["instructor"]}><InstructorEarnings /></ProtectedRoute>} />
               <Route path="messages" element={<ProtectedRoute allowedRoles={["instructor"]}><InstructorMessages /></ProtectedRoute>} />
+              <Route path="profile" element={<ProtectedRoute allowedRoles={["instructor"]}><InstructorProfile /></ProtectedRoute>} />
             </Route>
 
             {/* Admin Routes */}

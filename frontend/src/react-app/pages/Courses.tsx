@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router";
 import { Card } from "@/react-app/components/ui/card";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { Input } from "@/react-app/components/ui/input";
@@ -21,7 +22,9 @@ import { apiService } from "@/react-app/lib/apiService";
 type SortOption = 'popular' | 'rating' | 'newest' | 'price-low' | 'price-high';
 
 export default function Courses() {
+  const [searchParams] = useSearchParams();
   const [courses, setCourses] = useState<any[]>([]);
+  const [dynamicCategories, setDynamicCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Tüm Kategoriler");
@@ -43,7 +46,28 @@ export default function Courses() {
       }
     };
     fetchCourses();
-  }, []);
+
+    const fetchCategories = async () => {
+      try {
+        const cats = await apiService.getCategories();
+        // 'Tüm Kategoriler' seçeneğini listenin başına ekle
+        setDynamicCategories(["Tüm Kategoriler", ...cats.filter(c => c !== "Tüm Kategoriler")]);
+        
+        // URL'den kategori parametresi gelmişse onu seç
+        const categoryParam = searchParams.get("category");
+        if (categoryParam) {
+          setSelectedCategory(categoryParam);
+        }
+      } catch (error) {
+        console.error("Failed to fetch categories:", error);
+      }
+    };
+    fetchCategories();
+  }, [searchParams]);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [searchParams]);
 
   // Filter and sort courses
   const filteredCourses = useMemo(() => {
@@ -107,9 +131,9 @@ export default function Courses() {
     <div className="space-y-6">
       {/* Category Filter */}
       <div>
-        <h3 className="font-semibold text-foreground mb-3">Category</h3>
+        <h3 className="font-semibold text-foreground mb-3">Kategori</h3>
         <RadioGroup value={selectedCategory} onValueChange={setSelectedCategory}>
-          {categories.map((category) => (
+          {dynamicCategories.map((category) => (
             <div key={category} className="flex items-center space-x-2 mb-2">
               <RadioGroupItem value={category} id={`category-${category}`} />
               <Label
@@ -125,7 +149,7 @@ export default function Courses() {
 
       {/* Level Filter */}
       <div className="pt-4 border-t border-border">
-        <h3 className="font-semibold text-foreground mb-3">Level</h3>
+        <h3 className="font-semibold text-foreground mb-3">Seviye</h3>
         <RadioGroup value={selectedLevel} onValueChange={setSelectedLevel}>
           {levels.map((level) => (
             <div key={level} className="flex items-center space-x-2 mb-2">
@@ -143,7 +167,7 @@ export default function Courses() {
 
       {/* Price Filter */}
       <div className="pt-4 border-t border-border">
-        <h3 className="font-semibold text-foreground mb-3">Price</h3>
+        <h3 className="font-semibold text-foreground mb-3">Fiyat</h3>
         <RadioGroup
           value={selectedPriceRange.toString()}
           onValueChange={(value) => setSelectedPriceRange(parseInt(value))}
@@ -164,7 +188,7 @@ export default function Courses() {
 
       {/* Rating Filter */}
       <div className="pt-4 border-t border-border">
-        <h3 className="font-semibold text-foreground mb-3">Minimum Rating</h3>
+        <h3 className="font-semibold text-foreground mb-3">Minimum Puan</h3>
         <div className="space-y-2">
           {[4.5, 4.0, 3.5, 3.0, 0].map((rating) => (
             <div key={rating} className="flex items-center space-x-2">
@@ -177,7 +201,7 @@ export default function Courses() {
                 htmlFor={`rating-${rating}`}
                 className="text-sm font-normal cursor-pointer text-foreground flex items-center gap-1"
               >
-                {rating > 0 ? `${rating}+ stars` : 'All ratings'}
+                {rating > 0 ? `${rating}+ yıldız` : 'Tüm puanlar'}
               </Label>
             </div>
           ))}
@@ -191,7 +215,7 @@ export default function Courses() {
           className="w-full"
           onClick={clearFilters}
         >
-          Clear All Filters
+          Tüm Filtreleri Temizle
         </Button>
       )}
     </div>
@@ -203,10 +227,10 @@ export default function Courses() {
       <div className="bg-gradient-to-b from-muted/30 to-background border-b border-border/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <h1 className="text-4xl font-bold text-foreground mb-4">
-            Discover Courses
+            Kursları Keşfet
           </h1>
           <p className="text-lg text-muted-foreground mb-8">
-            Explore thousands of courses taught by expert instructors
+            Uzman eğitmenlerin verdiği binlerce kursu keşfedin
           </p>
 
           {/* Search */}
@@ -215,7 +239,7 @@ export default function Courses() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder="Search for courses..."
+                placeholder="Kurs arayın..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 h-12 rounded-xl"
@@ -241,7 +265,7 @@ export default function Courses() {
           <aside className="hidden lg:block lg:w-72 shrink-0">
             <Card className="p-6 sticky top-20">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="font-semibold text-foreground">Filters</h2>
+                <h2 className="font-semibold text-foreground">Filtreler</h2>
               </div>
               <FiltersSidebar />
             </Card>
@@ -255,7 +279,7 @@ export default function Courses() {
               onClick={() => setShowMobileFilters(!showMobileFilters)}
             >
               <SlidersHorizontal className="w-4 h-4 mr-2" />
-              Filters {hasActiveFilters && `(Active)`}
+              Filtreler {hasActiveFilters && `(Aktif)`}
             </Button>
 
             {showMobileFilters && (
@@ -270,21 +294,21 @@ export default function Courses() {
             {/* Results Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <p className="text-sm text-muted-foreground">
-                Showing <span className="font-semibold text-foreground">{filteredCourses.length}</span> {filteredCourses.length === 1 ? 'course' : 'courses'}
+                <span className="font-semibold text-foreground">{filteredCourses.length}</span> kurs gösteriliyor
               </p>
 
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground hidden sm:inline">Sort by:</span>
+                <span className="text-sm text-muted-foreground hidden sm:inline">Sırala:</span>
                 <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="popular">Most Popular</SelectItem>
-                    <SelectItem value="rating">Highest Rated</SelectItem>
-                    <SelectItem value="newest">Newest</SelectItem>
-                    <SelectItem value="price-low">Price: Low to High</SelectItem>
-                    <SelectItem value="price-high">Price: High to Low</SelectItem>
+                    <SelectItem value="popular">En Popüler</SelectItem>
+                    <SelectItem value="rating">En Yüksek Puan</SelectItem>
+                    <SelectItem value="newest">En Yeni</SelectItem>
+                    <SelectItem value="price-low">Fiyat: Düşükten Yükseğe</SelectItem>
+                    <SelectItem value="price-high">Fiyat: Yüksekten Düşüğe</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -314,11 +338,11 @@ export default function Courses() {
             ) : (
               <Card className="p-12 text-center">
                 <p className="text-muted-foreground mb-4">
-                  No courses found matching your criteria
+                  Kriterlerinize uygun kurs bulunamadı
                 </p>
                 {hasActiveFilters && (
                   <Button variant="outline" onClick={clearFilters}>
-                    Clear Filters
+                    Filtreleri Temizle
                   </Button>
                 )}
               </Card>

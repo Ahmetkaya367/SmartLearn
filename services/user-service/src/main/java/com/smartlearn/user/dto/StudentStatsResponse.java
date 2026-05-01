@@ -21,6 +21,7 @@ public class StudentStatsResponse {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class InProgressCourse {
+        private String enrollmentId;
         private String courseId;
         private int progress;
         private String lastAccessed;

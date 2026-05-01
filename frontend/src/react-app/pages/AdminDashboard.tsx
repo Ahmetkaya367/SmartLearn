@@ -44,10 +44,10 @@ export default function AdminDashboard() {
       <div className="bg-gradient-to-b from-muted/30 to-background border-b border-border/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <h1 className="text-4xl font-bold text-foreground mb-2">
-            Admin Dashboard
+            Yönetici Paneli
           </h1>
           <p className="text-lg text-muted-foreground">
-            Platform overview and management
+            Platform genel bakışı ve yönetimi
           </p>
         </div>
       </div>
@@ -62,7 +62,7 @@ export default function AdminDashboard() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">{stats?.totalUsers}</p>
-                <p className="text-sm text-muted-foreground">Total Users</p>
+                <p className="text-sm text-muted-foreground">Toplam Kullanıcı</p>
               </div>
             </div>
           </Card>
@@ -74,7 +74,7 @@ export default function AdminDashboard() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">{stats?.totalCourses}</p>
-                <p className="text-sm text-muted-foreground">Total Courses</p>
+                <p className="text-sm text-muted-foreground">Toplam Kurs</p>
               </div>
             </div>
           </Card>
@@ -85,8 +85,8 @@ export default function AdminDashboard() {
                 <DollarSign className="w-6 h-6 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">${stats?.totalRevenue.toLocaleString()}</p>
-                <p className="text-sm text-muted-foreground">Total Revenue</p>
+                <p className="text-2xl font-bold text-foreground">{stats?.totalRevenue.toLocaleString()} ₺</p>
+                <p className="text-sm text-muted-foreground">Toplam Gelir</p>
               </div>
             </div>
           </Card>
@@ -98,7 +98,7 @@ export default function AdminDashboard() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">{stats?.growthRate}%</p>
-                <p className="text-sm text-muted-foreground">Growth Rate</p>
+                <p className="text-sm text-muted-foreground">Büyüme Oranı</p>
               </div>
             </div>
           </Card>
@@ -108,7 +108,7 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="p-6">
             <h3 className="text-lg font-semibold text-foreground mb-4">
-              Recent Users
+              Son Kayıt Olanlar
             </h3>
             <div className="space-y-4">
               {stats?.recentUsers.map((user: any) => (
@@ -122,7 +122,7 @@ export default function AdminDashboard() {
               ))}
               {stats?.recentUsers.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-8">
-                  No users yet
+                  Henüz kullanıcı yok
                 </p>
               )}
             </div>
@@ -130,21 +130,21 @@ export default function AdminDashboard() {
 
           <Card className="p-6">
             <h3 className="text-lg font-semibold text-foreground mb-4">
-              Pending Course Approvals
+              Onay Bekleyen Kurslar
             </h3>
             <div className="space-y-4">
               {stats?.pendingApprovals.map((course: any) => (
                 <div key={course.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
                   <div>
                     <p className="font-medium text-foreground">{course.title}</p>
-                    <p className="text-xs text-muted-foreground">by {course.instructor}</p>
+                    <p className="text-xs text-muted-foreground">{course.instructor} tarafından</p>
                   </div>
-                  <Button size="sm" variant="outline">Review</Button>
+                  <Button size="sm" variant="outline">İncele</Button>
                 </div>
               ))}
               {stats?.pendingApprovals.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-8">
-                  No pending approvals
+                  Bekleyen başvuru yok
                 </p>
               )}
             </div>

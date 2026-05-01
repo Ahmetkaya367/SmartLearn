@@ -1,0 +1,25 @@
+# Media & Uploads
+uploads/
+my-videos/
+minio_data/
+*.mp4
+*.mov
+*.avi
+*.jpg
+*.png
+
+# Build & Dependencies
+target/
+build/
+node_modules/
+.gradle/
+bin/
+
+# IDE & OS
+.idea/
+.vscode/
+.DS_Store
+*.iml
+
+# Sensitive Data
+.env

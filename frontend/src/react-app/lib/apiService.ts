@@ -49,15 +49,62 @@ export const apiService = {
             throw new Error(errorData.message || "Login failed");
         }
         const data = await response.json();
+        
+        // Fetch full profile info from User Service to get latest avatar and name
+        let avatarUrl = data.avatarUrl;
+        let fullName = data.fullName;
+        
+        try {
+            const profileRes = await fetch(`${API_URL}/api/users/${data.id}`, {
+                headers: { "Authorization": `Bearer ${data.accessToken}` }
+            });
+            if (profileRes.ok) {
+                const profileData = await profileRes.json();
+                avatarUrl = profileData.avatarUrl;
+                fullName = profileData.fullName;
+            }
+        } catch (e) {
+            console.warn("Could not fetch profile details, using default auth info");
+        }
+
         const user: User = {
             id: data.id,
-            name: data.fullName,
+            name: fullName || data.fullName,
             email: data.email,
             role: data.role.replace("ROLE_", "").toLowerCase() as any,
-            avatar: data.avatarUrl || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop"
+            avatar: avatarUrl || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop"
         };
         localStorage.setItem("auth_token", data.accessToken);
         return { user, token: data.accessToken };
+    },
+
+    register: async (data: { name: string; email: string; password: string; role: string }) => {
+        if (USE_MOCK) {
+            await delay(800);
+            return { message: "Mock registration successful" };
+        }
+
+        const response = await fetch(`${API_URL}/api/auth/register`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                fullName: data.name,
+                email: data.email,
+                password: data.password,
+                role: data.role.toUpperCase()
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || "Registration failed");
+        }
+        
+        try {
+            return await response.json();
+        } catch(e) {
+            return { success: true };
+        }
     },
 
     // Courses
@@ -77,6 +124,7 @@ export const apiService = {
             title: course.title,
             description: course.description,
             instructor: course.instructor,
+            instructorId: course.instructorId,
             category: course.category,
             price: parseFloat(course.price),
             originalPrice: course.originalPrice ? parseFloat(course.originalPrice) : undefined,
@@ -87,6 +135,7 @@ export const apiService = {
             level: course.level,
             thumbnail: course.thumbnail,
             isBestseller: course.isBestseller,
+            published: course.published ?? true,
             updatedAt: course.updatedAt,
             status: course.status || "PUBLISHED"
         }));
@@ -108,6 +157,7 @@ export const apiService = {
             title: course.title,
             description: course.description,
             instructor: course.instructor,
+            instructorId: course.instructorId,
             category: course.category,
             price: parseFloat(course.price),
             originalPrice: course.originalPrice ? parseFloat(course.originalPrice) : undefined,
@@ -118,6 +168,7 @@ export const apiService = {
             level: course.level,
             thumbnail: course.thumbnail,
             isBestseller: course.isBestseller,
+            published: course.published ?? true,
             updatedAt: course.updatedAt,
             status: course.status || "PUBLISHED"
         }));
@@ -163,12 +214,14 @@ export const apiService = {
             title: data.title,
             description: data.description,
             instructor: data.instructor,
+            instructorId: data.instructorId,
             category: data.category,
             price: parseFloat(data.price),
             originalPrice: data.originalPrice ? parseFloat(data.originalPrice) : undefined,
             rating: data.rating,
             reviewCount: data.reviewCount || 0,
             studentCount: data.studentCount || 0,
+            level: data.level,
             thumbnail: data.thumbnail,
             image: data.thumbnail, // Alias for component
             duration: data.duration,
@@ -265,6 +318,47 @@ export const apiService = {
         return await response.json();
     },
 
+    getInstructorStatsByInstructorId: async (instructorId: string) => {
+        if (USE_MOCK) return { courseCount: 0, totalStudents: 0 };
+        try {
+            const response = await fetch(`${API_URL}/api/enrollments/instructor/${instructorId}/stats`, {
+                headers: getHeaders()
+            });
+            if (!response.ok) return null;
+            return await response.json();
+        } catch (_) {
+            return null;
+        }
+    },
+
+    getCoursesByInstructorId: async (instructorId: string): Promise<Course[]> => {
+        if (USE_MOCK) return [];
+        const response = await fetch(`${API_URL}/api/courses/instructor/${instructorId}`, {
+            headers: getHeaders()
+        });
+        if (!response.ok) return [];
+        const data = await response.json();
+        return data.map((course: any) => ({
+            id: course.id,
+            title: course.title,
+            description: course.description,
+            instructor: course.instructor,
+            category: course.category,
+            price: parseFloat(course.price),
+            originalPrice: course.originalPrice ? parseFloat(course.originalPrice) : undefined,
+            rating: course.rating,
+            reviewCount: course.reviewCount,
+            studentCount: course.studentCount,
+            duration: course.duration,
+            level: course.level,
+            thumbnail: course.thumbnail,
+            isBestseller: course.isBestseller,
+            published: course.published ?? true,
+            updatedAt: course.updatedAt,
+            status: course.status
+        }));
+    },
+
     getInstructorCourses: async (): Promise<Course[]> => {
         if (USE_MOCK) {
             await delay(800);
@@ -291,6 +385,7 @@ export const apiService = {
             level: course.level,
             thumbnail: course.thumbnail,
             isBestseller: course.isBestseller,
+            published: course.published ?? true,
             updatedAt: course.updatedAt || course.lastUpdated,
             status: course.status
         }));
@@ -308,7 +403,10 @@ export const apiService = {
             body: JSON.stringify(courseData)
         });
 
-        if (!response.ok) throw new Error("Course creation failed");
+        if (!response.ok) {
+            const errBody = await response.text();
+            throw new Error("Course creation failed: " + errBody);
+        }
         return await response.json();
     },
 
@@ -326,6 +424,18 @@ export const apiService = {
 
         if (!response.ok) throw new Error("Course update failed");
         return await response.json();
+    },
+
+    deleteCourse: async (id: string) => {
+        const response = await fetch(`${API_URL}/api/courses/${id}`, {
+            method: "DELETE",
+            headers: getHeaders()
+        });
+        if (!response.ok) {
+            const err = await response.text();
+            throw new Error(err || "Kurs silinemedi");
+        }
+        return true;
     },
 
     uploadMedia: async (file: File) => {
@@ -352,9 +462,17 @@ export const apiService = {
         return await response.json();
     },
 
-    getInstructorEarnings: async () => {
-        await delay(800);
-        return instructorEarnings;
+    getInstructorEarnings: async (instructorId: string) => {
+        if (USE_MOCK) {
+            await delay(800);
+            return instructorEarnings;
+        }
+
+        const response = await fetch(`${API_URL}/api/enrollments/instructor/${instructorId}/history`, {
+            headers: getHeaders()
+        });
+        if (!response.ok) return instructorEarnings;
+        return await response.json();
     },
 
     getMessages: async () => {
@@ -389,9 +507,85 @@ export const apiService = {
         return await response.json();
     },
 
+    checkoutCart: async (userId: string, courseIds: string[]) => {
+        const response = await fetch(`${API_URL}/api/enrollments/enroll`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ userId, courseIds })
+        });
+        if (!response.ok) throw new Error("Failed to enroll");
+        return await response.json();
+    },
+
+    updateLessonProgress: async (enrollmentId: string, lessonId: string, watchedSeconds: number, isCompleted: boolean = false) => {
+        const response = await fetch(`${API_URL}/api/enrollments/progress/update`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ enrollmentId, lessonId, watchedSeconds, isCompleted })
+        });
+        if (!response.ok) return null;
+        return await response.json();
+    },
+
+    getEnrollmentProgress: async (enrollmentId: string) => {
+        const response = await fetch(`${API_URL}/api/enrollments/${enrollmentId}/progress`, {
+            headers: getHeaders()
+        });
+        if (!response.ok) return [];
+        return await response.json();
+    },
+
+    getEnrollment: async (enrollmentId: string) => {
+        const response = await fetch(`${API_URL}/api/enrollments/${enrollmentId}`, {
+            headers: getHeaders()
+        });
+        if (!response.ok) throw new Error("Failed to fetch enrollment");
+        return await response.json();
+    },
+
+    getEnrollmentById: async (id: string) => {
+        const response = await fetch(`${API_URL}/api/enrollments/${id}`, {
+            headers: getHeaders()
+        });
+        if (!response.ok) throw new Error("Enrollment not found");
+        return await response.json();
+    },
+
+    uploadCertificate: async (enrollmentId: string, file: File) => {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("enrollmentId", enrollmentId);
+
+        const token = localStorage.getItem("auth_token");
+        const headers: HeadersInit = {
+            ...(token ? { "Authorization": `Bearer ${token}` } : {})
+        };
+
+        const response = await fetch(`${API_URL}/api/enrollments/${enrollmentId}/certificate`, {
+            method: "POST",
+            headers,
+            body: formData
+        });
+
+        if (!response.ok) throw new Error("Sertifika yüklenemedi.");
+        return await response.json();
+    },
+
     getStudentCertificates: async () => {
-        await delay(800);
-        return studentCertificates;
+        if (USE_MOCK) return studentCertificates;
+        const response = await fetch(`${API_URL}/api/enrollments/certificates/me`, {
+            headers: getHeaders()
+        });
+        if (!response.ok) return [];
+        return await response.json();
+    },
+
+    getUserProfile: async (userId: string) => {
+        const response = await fetch(`${API_URL}/api/users/${userId}`, {
+            headers: getHeaders()
+        });
+        if (!response.ok) throw new Error("Profil bulunamadı");
+        return await response.json();
     },
 
     banUser: async (id: string) => {
@@ -410,5 +604,208 @@ export const apiService = {
         });
         if (!response.ok) throw new Error("User activation failed");
         return true;
+    },
+
+    getMessageThread: async (otherUserId: string) => {
+        const response = await fetch(`${API_URL}/api/messages/thread/${otherUserId}`, {
+            headers: getHeaders()
+        });
+        if (!response.ok) return [];
+        return await response.json();
+    },
+
+    sendMessage: async (receiverId: string, content: string) => {
+        const response = await fetch(`${API_URL}/api/messages/send`, {
+            method: "POST",
+            headers: getHeaders(),
+            body: JSON.stringify({ receiverId, content })
+        });
+        if (!response.ok) throw new Error("Mesaj gönderilemedi");
+        return await response.json();
+    },
+
+    getConversations: async () => {
+        const response = await fetch(`${API_URL}/api/messages/conversations`, {
+            headers: getHeaders()
+        });
+        if (!response.ok) return [];
+        return await response.json();
+    },
+
+    getEligibleContacts: async () => {
+        const response = await fetch(`${API_URL}/api/messages/eligible-contacts`, {
+            headers: getHeaders()
+        });
+        if (!response.ok) return [];
+        return await response.json();
+    },
+
+    // Categories (Managed via Course Service without separate table)
+    getCategories: async (): Promise<string[]> => {
+        const response = await fetch(`${API_URL}/api/courses/categories`, {
+            headers: getHeaders()
+        });
+        if (!response.ok) return [
+            "Yazılım", "Veri Bilimi", "Pazarlama", "Tasarım", 
+            "Finans", "Fotoğrafçılık", "İşletme", "Bilişim ve Güvenlik"
+        ];
+        return await response.json();
+    },
+
+    renameCategory: async (oldName: string, newName: string) => {
+        const response = await fetch(`${API_URL}/api/courses/categories/rename`, {
+            method: "PUT",
+            headers: getHeaders(),
+            body: JSON.stringify({ oldName, newName })
+        });
+        if (!response.ok) throw new Error("Kategori güncellenemedi.");
+        return true;
+    },
+
+    addCategory: async (name: string) => {
+        const response = await fetch(`${API_URL}/api/courses/categories`, {
+            method: "POST",
+            headers: getHeaders(),
+            body: JSON.stringify({ name })
+        });
+        if (!response.ok) throw new Error("Kategori eklenemedi.");
+        return true;
+    },
+
+    deleteCategory: async (name: string) => {
+        const response = await fetch(`${API_URL}/api/courses/categories/${name}`, {
+            method: "DELETE",
+            headers: getHeaders()
+        });
+        if (!response.ok) throw new Error("Kategori silinemedi.");
+        return true;
+    },
+
+    updateUserProfile: async (userId: string, data: any) => {
+        const response = await fetch(`${API_URL}/api/users/${userId}`, {
+            method: "PUT",
+            headers: getHeaders(),
+            body: JSON.stringify(data)
+        });
+        if (!response.ok) throw new Error("Profil güncellenemedi.");
+        return await response.json();
+    },
+
+    changePassword: async (userId: string, currentPassword: string, newPassword: string) => {
+        const response = await fetch(`${API_URL}/api/auth/users/${userId}/password`, {
+            method: "POST",
+            headers: getHeaders(),
+            body: JSON.stringify({ currentPassword, newPassword })
+        });
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({ message: "Şifre değiştirilemedi" }));
+            throw new Error(err.message || "Mevcut şifre hatalı veya bir sorun oluştu.");
+        }
+        return true;
+    },
+
+    getSystemSettings: async () => {
+        const response = await fetch(`${API_URL}/api/site-settings`, {
+            headers: getHeaders()
+        });
+        if (!response.ok) return { support_email: "destek@smartlearn.com" };
+        return await response.json();
+    },
+
+    updateSystemSettings: async (settings: Record<string, string>) => {
+        const response = await fetch(`${API_URL}/api/site-settings`, {
+            method: "POST",
+            headers: getHeaders(),
+            body: JSON.stringify(settings)
+        });
+        if (!response.ok) throw new Error("Ayarlar güncellenemedi.");
+        return true;
+    },
+
+    // Reviews & Ratings
+    submitReview: async (courseId: string, rating: number, comment: string, userName?: string) => {
+        const response = await fetch(`${API_URL}/api/reviews`, {
+            method: "POST",
+            headers: getHeaders(),
+            body: JSON.stringify({ courseId, rating, comment, userName })
+        });
+        if (!response.ok) throw new Error("Değerlendirme gönderilemedi.");
+        return await response.json();
+    },
+
+    getCourseReviews: async (courseId: string) => {
+        const response = await fetch(`${API_URL}/api/reviews/course/${courseId}`, {
+            headers: getHeaders()
+        });
+        if (!response.ok) return [];
+        return await response.json();
+    },
+
+    getCourseReviewSummary: async (courseId: string) => {
+        const response = await fetch(`${API_URL}/api/reviews/course/${courseId}/summary`, {
+            headers: getHeaders()
+        });
+        if (!response.ok) return { averageRating: 0, reviewCount: 0 };
+        return await response.json();
+    },
+
+    getLessonProgress: async (enrollmentId: string, lessonId: string) => {
+        const response = await fetch(`${API_URL}/api/enrollments/progress/${enrollmentId}/${lessonId}`, {
+            headers: getHeaders()
+        });
+        if (!response.ok) return { watchedSeconds: 0 };
+        return await response.json();
+    },
+
+    getLastWatchedLesson: async (enrollmentId: string) => {
+        const response = await fetch(`${API_URL}/api/enrollments/progress/${enrollmentId}/last`, {
+            headers: getHeaders()
+        });
+        if (!response.ok) return { watchedSeconds: 0 };
+        return await response.json();
+    },
+
+    getUserReviewForCourse: async (userId: string, courseId: string) => {
+        const response = await fetch(`${API_URL}/api/reviews/user/${userId}/course/${courseId}`, {
+            headers: getHeaders()
+        });
+        if (!response.ok) return { exists: false };
+        return await response.json();
+    },
+
+    getCourseEnrollmentCount: async (courseId: string) => {
+        const response = await fetch(`${API_URL}/api/enrollments/course/${courseId}/count`, {
+            headers: getHeaders()
+        });
+        if (!response.ok) return 0;
+        return await response.json();
+    },
+
+    getAIRecommendations: async (userId: string): Promise<{ message: string }> => {
+        try {
+            const response = await fetch(`${API_URL}/api/assistant/recommendations?userId=${userId}`, {
+                headers: getHeaders()
+            });
+            if (!response.ok) throw new Error("Failed to fetch AI recommendations");
+            return await response.json();
+        } catch (error) {
+            console.error("AI Assistant error:", error);
+            return { message: "Üzgünüz, şu an asistan servisine ulaşılamıyor. Lütfen daha sonra tekrar deneyin." };
+        }
+    },
+
+    chatWithAI: async (message: string, userId: string) => {
+        try {
+            const response = await fetch(`${API_URL}/api/assistant/chat?userId=${userId}`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify({ message })
+            });
+            if (!response.ok) throw new Error("Failed to chat with AI");
+            return await response.json();
+        } catch (error) {
+            console.error("AI Chat error:", error);
+            return { message: "Mesajınız iletilemedi. Lütfen internet bağlantınızı kontrol edip tekrar deneyin." };
+        }
     },
 };

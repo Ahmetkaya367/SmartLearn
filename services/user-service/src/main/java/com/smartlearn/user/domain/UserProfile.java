@@ -30,6 +30,7 @@ public class UserProfile {
 
     private String bio;
     private String avatarUrl;
+    private String role;
 
     @Builder.Default
     private String status = "ACTIVE"; // ACTIVE, PENDING, FROZEN, BANNED

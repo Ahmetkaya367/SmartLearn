@@ -21,6 +21,7 @@
         <module>services/user-service</module>
         <module>services/course-service</module>
         <module>services/enrollment-service</module>
+        <module>services/assistant-service</module>
     </modules>
 
     <properties>

@@ -1,11 +1,13 @@
 import { Button } from "@/react-app/components/ui/button";
-import { BookOpen, Search, Menu, LogOut, User as UserIcon } from "lucide-react";
+import { BookOpen, Search, Menu, LogOut, User as UserIcon, ShoppingCart } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { useAuthStore } from "@/react-app/store/useAuthStore";
+import { useCartStore } from "@/react-app/store/useCartStore";
 
 export function Navbar() {
   const { isAuthenticated, user, logout } = useAuthStore();
   const navigate = useNavigate();
+  const cartItems = useCartStore((state) => state.items);
 
   const handleLogout = () => {
     logout();
@@ -27,19 +29,14 @@ export function Navbar() {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-1">
             <Button variant="ghost" className="text-foreground hover:text-primary" asChild>
-              <Link to="/courses">Explore</Link>
+              <Link to="/courses">Keşfet</Link>
             </Button>
             <Button variant="ghost" className="text-foreground hover:text-primary" asChild>
-              <Link to="/courses">Categories</Link>
+              <Link to="/#popular-categories">Kategoriler</Link>
             </Button>
-            {user?.role !== "instructor" && (
-              <Button variant="ghost" className="text-foreground hover:text-primary" asChild>
-                <Link to="/instructor">Teach on Learnify</Link>
-              </Button>
-            )}
             {isAuthenticated && (
               <Button variant="ghost" className="text-foreground hover:text-primary font-semibold" asChild>
-                <Link to={`/${user?.role}`}>Dashboard</Link>
+                <Link to={`/${user?.role}`}>Panel</Link>
               </Button>
             )}
           </nav>
@@ -49,6 +46,20 @@ export function Navbar() {
             <Button variant="ghost" size="icon" className="hidden sm:flex">
               <Search className="h-5 w-5" />
             </Button>
+
+            {/* Cart Icon */}
+            {user?.role !== "admin" && user?.role !== "instructor" && (
+              <Button variant="ghost" size="icon" className="relative hidden md:flex" asChild>
+                <Link to="/cart">
+                  <ShoppingCart className="h-5 w-5" />
+                  {cartItems.length > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                      {cartItems.length}
+                    </span>
+                  )}
+                </Link>
+              </Button>
+            )}
 
             <div className="hidden md:flex items-center gap-2">
               {isAuthenticated ? (

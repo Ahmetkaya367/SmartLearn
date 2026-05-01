@@ -74,7 +74,8 @@ public class StatsController {
                             .id(user.getId().toString())
                             .name(user.getFullName() != null ? user.getFullName() : "Unknown")
                             .email(user.getEmail() != null ? user.getEmail() : "unknown@example.com")
-                            .joinedAt(user.getCreatedAt() != null ? user.getCreatedAt().toString() : LocalDateTime.now().toString())
+                            .joinedAt(user.getCreatedAt() != null ? user.getCreatedAt().toString()
+                                    : LocalDateTime.now().toString())
                             .build())
                     .toList();
             log.info("Recent users count: {}", recentUsers.size());
@@ -137,7 +138,8 @@ public class StatsController {
             log.info("Instructor total courses: {}", totalCourses);
 
             // Eğitmen kurslarının toplam öğrencisi
-            Map<String, Object> instructorEnrollmentStats = enrollmentClient.getInstructorEnrollmentStats(instructorIdStr);
+            Map<String, Object> instructorEnrollmentStats = enrollmentClient
+                    .getInstructorEnrollmentStats(instructorIdStr);
             Long totalStudents = 0L;
             Double totalRevenue = 0.0;
             if (instructorEnrollmentStats != null) {
@@ -205,19 +207,40 @@ public class StatsController {
             // İlerleme durumu
             List<StudentStatsResponse.InProgressCourse> inProgress = userProgress.stream()
                     .map(p -> StudentStatsResponse.InProgressCourse.builder()
+                            .enrollmentId((String) p.get("enrollmentId"))
                             .courseId((String) p.get("courseId"))
                             .progress(((Number) p.getOrDefault("progress", 0)).intValue())
                             .lastAccessed((String) p.getOrDefault("lastAccessed", LocalDateTime.now().toString()))
                             .build())
                     .toList();
 
-            // Belge sayısı (gerçek veri henüz yok, 0 dönüyoruz)
+            // Belge sayısı
             int certificates = 0;
+            try {
+                Long certCount = enrollmentClient.getCertificateCount(studentId);
+                if (certCount != null) {
+                    certificates = certCount.intValue();
+                }
+            } catch (Exception e) {
+                log.warn("Failed to fetch certificate count: {}", e.getMessage());
+            }
 
-            // Öğrenme süresi (mock)
-            String learningTime = (enrolledCourses.size() * 20) + "h";
+            // Öğrenme süresi (gerçek veritabanı saniyelerinden)
+            String learningTime = "0dk";
+            try {
+                Integer totalSeconds = enrollmentClient.getLearningTime(studentId);
+                if (totalSeconds != null && totalSeconds > 0) {
+                    // Toplam dakikayı hesapla (saniyeyi 60'a böl)
+                    int totalMinutes = totalSeconds / 60;
+                    if (totalMinutes == 0 && totalSeconds > 0) totalMinutes = 1; // 1 dk'dan azsa 1 dk göster
+                    learningTime = totalMinutes + " dk";
+                }
+            } catch (Exception e) {
+                log.warn("Failed to fetch learning time: {}", e.getMessage());
+            }
 
-            log.info("Student enrolled courses: {}, certificates: {}, learning time: {}", enrolledCourses.size(), certificates, learningTime);
+            log.info("Student enrolled courses: {}, certificates: {}, learning time: {}", enrolledCourses.size(),
+                    certificates, learningTime);
 
             return ResponseEntity.ok(StudentStatsResponse.builder()
                     .enrolledCourses(enrolledCourses)

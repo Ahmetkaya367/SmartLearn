@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
-import com.smartlearn.course.domain.CourseStatus;
 
 @Data
 @Builder
@@ -19,7 +18,7 @@ public class CourseResponse {
     private String title;
     private String description;
     private BigDecimal price;
-    private Double originalPrice;
+    private BigDecimal originalPrice;
     private UUID instructorId;
     private String instructor; // Instructor name
     private String category;
@@ -28,6 +27,7 @@ public class CourseResponse {
     private Double rating;
     private Integer reviewCount;
     private String duration;
+    private Integer totalDurationSeconds;
     private Boolean isBestseller;
     private String updatedAt;
     private String thumbnail;
@@ -48,6 +48,6 @@ public class CourseResponse {
     private String lastUpdated;
     private Boolean certificateIncluded;
 
-    private CourseStatus status;
+    private String status;
     private List<SectionDto> sections;
 }

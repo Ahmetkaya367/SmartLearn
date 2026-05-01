@@ -25,14 +25,12 @@ export const courses: Course[] = [
     instructor: 'Seda Yılmaz',
     category: 'Yazılım',
     price: 49.99,
-    originalPrice: 199.99,
     rating: 4.8,
     reviewCount: 12543,
     studentCount: 45230,
     duration: '42 saat',
     level: 'Başlangıç',
     thumbnail: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&h=450&fit=crop',
-    isBestseller: true,
     updatedAt: '2024-01-15'
   },
   {
@@ -92,7 +90,6 @@ export const courses: Course[] = [
     instructor: 'Davut Kaya',
     category: 'Yazılım',
     price: 54.99,
-    originalPrice: 189.99,
     rating: 4.9,
     reviewCount: 4123,
     studentCount: 15600,

@@ -12,8 +12,8 @@ import { useAuthStore } from "@/react-app/store/useAuthStore";
 import { apiService } from "@/react-app/lib/apiService";
 
 const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  email: z.string().email("Geçersiz e-posta adresi"),
+  password: z.string().min(6, "Şifre en az 6 karakter olmalıdır"),
 });
 
 type LoginValues = z.infer<typeof loginSchema>;
@@ -46,7 +46,7 @@ export default function Login() {
       const result = await apiService.login(data.email, data.password);
       login(result.user, result.token);
     } catch (err: any) {
-      setError(err.message || "Invalid credentials");
+      setError(err.message || "Geçersiz kimlik bilgileri");
     }
   };
 
@@ -57,9 +57,9 @@ export default function Login() {
           <Link to="/" className="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 mb-4 transition-transform hover:scale-105">
             <BookOpen className="w-6 h-6 text-primary-foreground" />
           </Link>
-          <h1 className="text-2xl font-bold text-foreground">Welcome back</h1>
+          <h1 className="text-2xl font-bold text-foreground">Tekrar Hoş Geldiniz</h1>
           <p className="text-sm text-muted-foreground mt-2">
-            Sign in to continue your learning journey
+            Öğrenme yolculuğunuza devam etmek için giriş yapın
           </p>
         </div>
 
@@ -71,11 +71,11 @@ export default function Login() {
 
         <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
           <div className="space-y-2">
-            <Label htmlFor="email" className={errors.email ? "text-destructive" : ""}>Email</Label>
+            <Label htmlFor="email" className={errors.email ? "text-destructive" : ""}>E-posta</Label>
             <Input
               id="email"
               type="email"
-              placeholder="you@example.com"
+              placeholder="ornek@email.com"
               className={errors.email ? "h-11 border-destructive focus-visible:ring-destructive" : "h-11"}
               {...register("email")}
             />
@@ -86,12 +86,12 @@ export default function Login() {
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="password" className={errors.password ? "text-destructive" : ""}>Password</Label>
+              <Label htmlFor="password" className={errors.password ? "text-destructive" : ""}>Şifre</Label>
               <Link
                 to="/forgot-password"
                 className="text-sm text-primary hover:underline"
               >
-                Forgot?
+                Şifremi Unuttum?
               </Link>
             </div>
             <Input
@@ -110,26 +110,18 @@ export default function Login() {
             {isSubmitting ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
-              "Sign in"
+              "Giriş Yap"
             )}
           </Button>
         </form>
 
         <div className="mt-6 text-center">
           <p className="text-sm text-muted-foreground">
-            Don't have an account?{" "}
+            Hesabınız yok mu?{" "}
             <Link to="/register" className="text-primary font-medium hover:underline">
-              Sign up
+              Kayıt Ol
             </Link>
           </p>
-          <div className="mt-4 pt-4 border-t border-border">
-            <p className="text-xs text-muted-foreground mb-2 italic">Mock Test Accounts:</p>
-            <div className="flex flex-wrap justify-center gap-2">
-              <button onClick={() => navigate("/login", { state: { email: "admin@learnify.com" } })} className="text-[10px] bg-muted px-2 py-1 rounded hover:bg-muted/80">Admin</button>
-              <button onClick={() => navigate("/login", { state: { email: "sarah@instructor.com" } })} className="text-[10px] bg-muted px-2 py-1 rounded hover:bg-muted/80">Instructor</button>
-              <button onClick={() => navigate("/login", { state: { email: "student@learnify.com" } })} className="text-[10px] bg-muted px-2 py-1 rounded hover:bg-muted/80">Student</button>
-            </div>
-          </div>
         </div>
       </Card>
     </div>

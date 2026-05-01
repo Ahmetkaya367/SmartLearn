@@ -21,7 +21,10 @@ public interface EnrollmentClient {
     Long getDistinctUserCount();
 
     @GetMapping("/api/enrollments/user/{userId}/progress")
-    List<Map<String, Object>> getUserProgress(@PathVariable UUID userId);
+    List<Map<String, Object>> getUserProgress(@PathVariable("userId") UUID userId);
+
+    @GetMapping("/api/enrollments/user/{userId}/learning-time")
+    Integer getLearningTime(@PathVariable("userId") UUID userId);
 
     @GetMapping("/api/enrollments/instructor/{instructorId}/stats")
     Map<String, Object> getInstructorEnrollmentStats(@PathVariable String instructorId);
@@ -29,4 +32,12 @@ public interface EnrollmentClient {
     @GetMapping("/api/enrollments/course/{courseId}/count")
     Long getCourseEnrollmentCount(@PathVariable String courseId);
 
+    @GetMapping("/api/enrollments/instructor/{instructorId}/students")
+    List<Map<String, Object>> getInstructorStudents(@PathVariable UUID instructorId);
+
+    @GetMapping("/api/enrollments/student/{studentId}/instructors")
+    List<String> getStudentInstructors(@PathVariable UUID studentId);
+
+    @GetMapping("/api/enrollments/user/{userId}/certificates/count")
+    Long getCertificateCount(@PathVariable("userId") UUID userId);
 }

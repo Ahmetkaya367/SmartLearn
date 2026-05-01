@@ -1,9 +1,21 @@
 import { motion } from 'framer-motion';
+import { Link } from 'react-router';
 import { Button } from "@/react-app/components/ui/button";
 import { Scene } from './Scene';
-import { ArrowRight, PlayCircle } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { apiService } from '@/react-app/lib/apiService';
+import { useAuthStore } from '@/react-app/store/useAuthStore';
 
 export default function Hero3D() {
+    const { user } = useAuthStore();
+    const [userCount, setUserCount] = useState<number>(0);
+
+    useEffect(() => {
+        apiService.getAdminUsers()
+            .then(users => setUserCount(users.length))
+            .catch(() => setUserCount(2000)); // Fallback
+    }, []);
     return (
         <section className="relative w-full min-h-screen lg:min-h-[800px] overflow-hidden bg-background">
             {/* Background Gradients */}
@@ -25,30 +37,30 @@ export default function Hero3D() {
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                             </span>
-                            New: AI-Powered Learning Paths
+                            New: Yapay Zeka Destekli Öğrenme Yolları
                         </div>
 
                         <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-foreground leading-[1.1] mb-6">
-                            Learn Without <br className="hidden sm:block" />
+                            Sınır Tanımadan <br className="hidden sm:block" />
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-600">
-                                Limits
+                                Öğrenin
                             </span>
                         </h1>
 
                         <p className="text-lg sm:text-xl text-muted-foreground mb-8 max-w-lg leading-relaxed">
-                            Unlock your potential with world-class courses from expert instructors.
-                            Master new skills in a premium, immersive learning environment.
+                            Uzman eğitmenlerden dünya standartlarında kurslarla potansiyelinizi açığa çıkarın. 
+                            Premium ve sürükleyici bir öğrenme ortamında yeni beceriler kazanın.
                         </p>
 
                         <div className="flex flex-col sm:flex-row gap-4">
-                            <Button size="lg" className="h-12 px-8 text-base shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all duration-300">
-                                Get Started Free
-                                <ArrowRight className="ml-2 w-4 h-4" />
-                            </Button>
-                            <Button variant="outline" size="lg" className="h-12 px-8 text-base hover:bg-muted/50 transition-all duration-300">
-                                <PlayCircle className="mr-2 w-4 h-4" />
-                                View Demo
-                            </Button>
+                            {user?.role !== "admin" && user?.role !== "instructor" && (
+                                <Link to="/ai-assistant">
+                                    <Button size="lg" className="h-12 px-8 text-base shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all duration-300 w-full sm:w-auto">
+                                        Ücretsiz Yapay Zeka Desteğini Başlat
+                                        <ArrowRight className="ml-2 w-4 h-4" />
+                                    </Button>
+                                </Link>
+                            )}
                         </div>
 
                         <div className="mt-12 flex items-center gap-8 text-sm text-muted-foreground">
@@ -59,10 +71,10 @@ export default function Hero3D() {
                                     </div>
                                 ))}
                                 <div className="w-10 h-10 rounded-full border-2 border-background bg-slate-100 flex items-center justify-center text-xs font-semibold z-0">
-                                    +2k
+                                    {userCount > 0 ? `+${userCount}` : '+2k'}
                                 </div>
                             </div>
-                            <p>Trusted by 2,000+ students</p>
+                            <p>{userCount > 0 ? `${userCount} öğrencinin tercihi` : "2.000'den fazla öğrencinin tercihi"}</p>
                         </div>
                     </motion.div>
                 </div>
@@ -87,7 +99,7 @@ export default function Hero3D() {
                 transition={{ delay: 1.5, duration: 1 }}
                 className="absolute bottom-10 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2 text-muted-foreground/50 z-20"
             >
-                <span className="text-xs uppercase tracking-widest">Scroll</span>
+                <span className="text-xs uppercase tracking-widest">Kaydır</span>
                 <div className="w-[1px] h-12 bg-gradient-to-b from-muted-foreground/50 to-transparent" />
             </motion.div>
         </section>

@@ -11,33 +11,33 @@ import {
 const features = [
   {
     icon: GraduationCap,
-    title: "Expert Instructors",
-    description: "Learn from industry professionals with real-world experience and proven teaching methods.",
+    title: "Uzman Eğitmenler",
+    description: "Sektör profesyonellerinden gerçek dünya deneyimi ve kanıtlanmış öğretim yöntemleriyle öğrenin.",
   },
   {
     icon: Clock,
-    title: "Learn at Your Pace",
-    description: "Access courses 24/7 and learn on your schedule. Pause, rewind, and review anytime.",
+    title: "Kendi Hızınızda Öğrenin",
+    description: "Kurslara 7/24 erişin ve kendi programınıza göre öğrenin. İstediğiniz zaman duraklatın ve tekrar izleyin.",
   },
   {
     icon: Award,
-    title: "Recognized Certificates",
-    description: "Earn certificates upon completion to showcase your achievements and boost your career.",
+    title: "Tanınmış Sertifikalar",
+    description: "Başarılarınızı sergilemek ve kariyerinizi geliştirmek için tamamlama sertifikaları kazanın.",
   },
   {
     icon: Users,
-    title: "Active Community",
-    description: "Connect with fellow learners, share insights, and grow together in our vibrant community.",
+    title: "Aktif Topluluk",
+    description: "Diğer öğrencilerle bağlantı kurun, içgörülerinizi paylaşın ve canlı topluluğumuzda birlikte büyüyün.",
   },
   {
     icon: Smartphone,
-    title: "Mobile Learning",
-    description: "Access your courses on any device. Learn on the go with our seamless mobile experience.",
+    title: "Mobil Öğrenme",
+    description: "Kurslarınıza herhangi bir cihazdan erişin. Benzersiz mobil deneyimimizle hareket halindeyken öğrenin.",
   },
   {
     icon: Infinity,
-    title: "Unlimited Access",
-    description: "Get unlimited access to thousands of courses with a single subscription. No hidden fees.",
+    title: "Sınırsız Erişim",
+    description: "Tek bir abonelikle binlerce kursa sınırsız erişim sağlayın. Gizli ücret veya ek maliyet yok.",
   },
 ];
 
@@ -48,10 +48,10 @@ export function Features() {
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4">
-            Why choose Learnify?
+            Neden Learnify?
           </h2>
           <p className="text-lg text-muted-foreground">
-            Everything you need to succeed in your learning journey, all in one place
+            Öğrenme yolculuğunuzda başarılı olmanız için ihtiyacınız olan her şey tek bir yerde.
           </p>
         </div>
 

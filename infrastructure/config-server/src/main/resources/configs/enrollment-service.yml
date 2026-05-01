@@ -1,17 +1,20 @@
+server:
+  tomcat:
+    max-swallow-size: 50MB
+    max-http-form-post-size: 50MB
 spring:
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
   datasource:
-    url: jdbc:postgresql://enrollment-db:5432/enrollmentdb
+    url: jdbc:postgresql://postgres:5432/enrollmentdb
     username: smartuser
     password: smartpass
   jpa:
     hibernate:
-      ddl-auto: validate
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-  flyway:
-    enabled: true
-    baseline-on-migrate: true
+      ddl-auto: update
+    show-sql: true
   kafka:
     bootstrap-servers: kafka:9092
     consumer:
@@ -24,3 +27,8 @@ spring:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+app:
+  upload:
+    dir: /app/uploads
+  url-prefix: http://localhost:8080/api/enrollments/uploads/

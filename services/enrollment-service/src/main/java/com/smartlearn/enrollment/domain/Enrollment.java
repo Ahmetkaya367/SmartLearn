@@ -34,4 +34,10 @@ public class Enrollment {
 
     @Column(name = "enrolled_at", nullable = false)
     private LocalDateTime enrolledAt;
+
+    @Column(name = "certificate_url")
+    private String certificateUrl;
+
+    @Column(name = "issued_at")
+    private LocalDateTime issuedAt;
 }

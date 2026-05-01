@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: assistant-service
+  config:
+    import: "optional:configserver:${SPRING_CONFIG_IMPORT_URL:http://config-server:8888}"
+  profiles:
+    active: dev

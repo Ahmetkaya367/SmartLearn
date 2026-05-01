@@ -35,6 +35,9 @@ public class Course {
     @Column(nullable = false)
     private BigDecimal price;
 
+    @Column(name = "original_price")
+    private BigDecimal originalPrice;
+
     @Column(name = "instructor_id", nullable = false)
     private UUID instructorId;
 

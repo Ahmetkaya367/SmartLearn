@@ -23,3 +23,5 @@ bin/
 
 # Sensitive Data
 .env
+.env
+.env

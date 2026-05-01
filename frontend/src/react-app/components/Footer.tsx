@@ -15,72 +15,47 @@ export function Footer() {
               <span className="text-xl font-bold text-foreground">Learnify</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              Empowering learners worldwide with premium online education.
+              Dünya çapında öğrencileri premium çevrimiçi eğitimle güçlendiriyoruz.
             </p>
           </div>
 
-          {/* Platform */}
-          <div>
-            <h3 className="font-semibold text-foreground mb-4">Platform</h3>
-            <ul className="space-y-2">
-              <li>
-                <Link to="/courses" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Browse Courses
-                </Link>
-              </li>
-              <li>
-                <Link to="/categories" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Categories
-                </Link>
-              </li>
-              <li>
-                <Link to="/instructor" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Teach on Learnify
-                </Link>
-              </li>
-            </ul>
-          </div>
 
           {/* Support */}
           <div>
-            <h3 className="font-semibold text-foreground mb-4">Support</h3>
+            <h3 className="font-semibold text-foreground mb-4">Destek</h3>
             <ul className="space-y-2">
               <li>
-                <a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Help Center
-                </a>
+                <Link to="/faq" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                  Yardım Merkezi
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Contact Us
-                </a>
+                <Link to="/contact" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                  Bize Ulaşın
+                </Link>
               </li>
-              <li>
-                <a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  FAQs
-                </a>
-              </li>
+
             </ul>
           </div>
 
           {/* Legal */}
           <div>
-            <h3 className="font-semibold text-foreground mb-4">Legal</h3>
+            <h3 className="font-semibold text-foreground mb-4">Yasal</h3>
             <ul className="space-y-2">
               <li>
-                <a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Privacy Policy
-                </a>
+                <Link to="/privacy" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                  Gizlilik Politikası
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Terms of Service
-                </a>
+                <Link to="/terms" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                  Kullanım Şartları
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Cookie Policy
-                </a>
+                <Link to="/cookies" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                  Çerez Politikası
+                </Link>
               </li>
             </ul>
           </div>
@@ -88,7 +63,7 @@ export function Footer() {
 
         <div className="mt-12 pt-8 border-t border-border/40">
           <p className="text-center text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Learnify. All rights reserved.
+            © {new Date().getFullYear()} Learnify. Tüm hakları saklıdır.
           </p>
         </div>
       </div>

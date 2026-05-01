@@ -93,6 +93,7 @@ Bu kursun sonunda, profesyonel bir proje portföyüne ve hayal ettiğiniz herhan
       {
         id: '51111111-1111-1111-1111-111111111111',
         title: 'Giriş & Kurulum',
+        orderIndex: 0,
         lessons: [
           { id: '11111111-0000-0000-0000-000000000001', title: 'Kursa Hoş Geldiniz', duration: '5:32', type: 'video', isPreview: true },
           { id: '11111111-0000-0000-0000-000000000002', title: 'Kursa Genel Bakış & Neler Geliştireceğiz?', duration: '8:15', type: 'video', isPreview: true },
@@ -103,6 +104,7 @@ Bu kursun sonunda, profesyonel bir proje portföyüne ve hayal ettiğiniz herhan
       {
         id: '51111111-1111-1111-1111-111111111112',
         title: 'HTML Temelleri',
+        orderIndex: 1,
         lessons: [
           { id: '11111111-0000-0000-0000-000000000005', title: 'HTML Temelleri & Belge Yapısı', duration: '15:30', type: 'video' },
           { id: '11111111-0000-0000-0000-000000000006', title: 'Metin Elementleri & Biçimlendirme', duration: '12:15', type: 'video' },
@@ -116,6 +118,7 @@ Bu kursun sonunda, profesyonel bir proje portföyüne ve hayal ettiğiniz herhan
       {
         id: '51111111-1111-1111-1111-111111111113',
         title: 'CSS Stilleri & Düzenleri',
+        orderIndex: 2,
         lessons: [
           { id: '11111111-0000-0000-0000-000000000012', title: 'CSS Temelleri', duration: '22:15', type: 'video' },
           { id: '11111111-0000-0000-0000-000000000013', title: 'Seçiciler ve Özgüllük (Specificity)', duration: '18:40', type: 'video' },
@@ -129,6 +132,7 @@ Bu kursun sonunda, profesyonel bir proje portföyüne ve hayal ettiğiniz herhan
       {
         id: '51111111-1111-1111-1111-111111111114',
         title: 'JavaScript Temelleri',
+        orderIndex: 3,
         lessons: [
           { id: '11111111-0000-0000-0000-000000000019', title: 'JavaScript Başlangıç', duration: '26:30', type: 'video' },
           { id: '11111111-0000-0000-0000-000000000020', title: 'Değişkenler, Veri Tipleri ve Operatörler', duration: '22:15', type: 'video' },
@@ -141,6 +145,7 @@ Bu kursun sonunda, profesyonel bir proje portföyüne ve hayal ettiğiniz herhan
       {
         id: '51111111-1111-1111-1111-111111111115',
         title: 'Modern JavaScript (ES6+)',
+        orderIndex: 4,
         lessons: [
           { id: '11111111-0000-0000-0000-000000000025', title: 'Ok (Arrow) Fonksiyonları', duration: '18:20', type: 'video' },
           { id: '11111111-0000-0000-0000-000000000026', title: 'Destructuring ve Spread Operatörü', duration: '20:15', type: 'video' },
@@ -151,6 +156,7 @@ Bu kursun sonunda, profesyonel bir proje portföyüne ve hayal ettiğiniz herhan
       {
         id: '51111111-1111-1111-1111-111111111116',
         title: 'React Temelleri',
+        orderIndex: 5,
         lessons: [
           { id: '11111111-0000-0000-0000-000000000029', title: 'React\'e Giriş', duration: '15:20', type: 'video' },
           { id: '11111111-0000-0000-0000-000000000030', title: 'Bileşenler (Components) ve Props', duration: '24:15', type: 'video' },

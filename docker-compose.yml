@@ -4,8 +4,8 @@ services:
   postgres:
     image: postgres:15-alpine
     environment:
-      POSTGRES_USER: smartuser
-      POSTGRES_PASSWORD: smartpass
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_MULTIPLE_DATABASES: authdb,userdb,coursedb,orderdb,paymentdb,enrollmentdb,notificationdb
     ports:
       - "5433:5432"
@@ -99,7 +99,7 @@ services:
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
-      APP_JWT_SECRET: 5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437
+      APP_JWT_SECRET: ${JWT_SECRET}
     networks:
       - smartlearn-network
 
@@ -115,12 +115,12 @@ services:
         condition: service_healthy
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/authdb
-      SPRING_DATASOURCE_USERNAME: smartuser
-      SPRING_DATASOURCE_PASSWORD: smartpass
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
-      APP_JWT_SECRET: 5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437
+      APP_JWT_SECRET: ${JWT_SECRET}
     networks:
       - smartlearn-network
 
@@ -135,12 +135,12 @@ services:
         condition: service_healthy
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/userdb
-      SPRING_DATASOURCE_USERNAME: smartuser
-      SPRING_DATASOURCE_PASSWORD: smartpass
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
-      APP_JWT_SECRET: 5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437
+      APP_JWT_SECRET: ${JWT_SECRET}
     networks:
       - smartlearn-network
 
@@ -155,11 +155,11 @@ services:
         condition: service_healthy
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/coursedb
-      SPRING_DATASOURCE_USERNAME: smartuser
-      SPRING_DATASOURCE_PASSWORD: smartpass
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
-      SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
+      SPRING_CONFIG_IMPORT_URL: http://config-server:8888
     volumes:
       - ./uploads:/app/uploads
     networks:
@@ -176,10 +176,28 @@ services:
         condition: service_healthy
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/enrollmentdb
-      SPRING_DATASOURCE_USERNAME: smartuser
-      SPRING_DATASOURCE_PASSWORD: smartpass
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    volumes:
+      - ./uploads/certificates:/app/uploads
+    networks:
+      - smartlearn-network
+
+  assistant-service:
+    build: ./services/assistant-service
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
+      SPRING_AI_GOOGLE_GENAI_API_KEY: ${GEMINI_API_KEY}
     networks:
       - smartlearn-network
 

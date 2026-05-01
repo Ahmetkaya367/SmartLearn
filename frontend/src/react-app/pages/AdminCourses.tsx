@@ -99,7 +99,7 @@ export default function AdminCourses() {
                                     <p className="text-sm text-muted-foreground">Eğitmen: <span className="font-medium text-foreground">{c.instructor}</span></p>
                                     <div className="flex items-center gap-4 mt-2">
                                         <Badge variant="outline">{c.category}</Badge>
-                                        <span className="text-sm font-bold text-primary">${c.price}</span>
+                                        <span className="text-sm font-bold text-primary">{c.price} ₺</span>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2 self-end md:self-center">

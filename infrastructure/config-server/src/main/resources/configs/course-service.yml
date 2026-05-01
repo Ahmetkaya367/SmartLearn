@@ -1,12 +1,12 @@
 server:
   tomcat:
-    max-swallow-size: 500MB
-    max-http-form-post-size: 500MB
+    max-swallow-size: 1024MB
+    max-http-form-post-size: 1024MB
 spring:
   servlet:
     multipart:
-      max-file-size: 500MB
-      max-request-size: 500MB
+      max-file-size: 1024MB
+      max-request-size: 1024MB
   datasource:
     url: jdbc:postgresql://postgres:5432/coursedb
     username: smartuser

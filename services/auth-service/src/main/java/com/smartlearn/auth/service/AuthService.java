@@ -1,12 +1,16 @@
 package com.smartlearn.auth.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smartlearn.auth.domain.User;
 import com.smartlearn.auth.dto.AuthResponse;
 import com.smartlearn.auth.dto.LoginRequest;
 import com.smartlearn.auth.dto.RegisterRequest;
+import com.smartlearn.auth.dto.UserAuthDetails;
+import com.smartlearn.auth.dto.UserCreatedEvent;
 import com.smartlearn.auth.repository.UserRepository;
 import com.smartlearn.auth.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -22,6 +26,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthService {
 
     private final AuthenticationManager authenticationManager;
@@ -29,13 +34,15 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final ObjectMapper objectMapper;
 
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
         if (!user.isActive() || "BANNED".equals(user.getStatus())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Hesabınız banlanmıştır 1 gün sonra yeniden deneyin");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Hesabınız banlanmıştır 1 gün sonra yeniden deneyin");
         }
 
         Authentication authentication = authenticationManager.authenticate(
@@ -80,17 +87,57 @@ public class AuthService {
 
         userRepository.save(user);
 
-        // Publish User Created Event
-        kafkaTemplate.send("user.created", user.getId().toString());
+        // Publish User Created Event with full data so user-service can create proper profile
+        try {
+            UserCreatedEvent event = UserCreatedEvent.builder()
+                    .id(user.getId().toString())
+                    .email(user.getEmail())
+                    .fullName(user.getFullName())
+                    .role(user.getRole())
+                    .build();
+            String jsonEvent = objectMapper.writeValueAsString(event);
+            kafkaTemplate.send("user.created", jsonEvent);
+        } catch (Exception e) {
+            log.error("Failed to publish user.created event", e);
+        }
 
         return login(new LoginRequest(request.getEmail(), request.getPassword()));
     }
 
     public void updateUserStatus(UUID id, boolean active, String status) {
+        log.info("Updating user status: id={}, active={}, status={}", id, active, status);
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+                .orElseThrow(() -> {
+                    log.error("User not found for status update: id={}", id);
+                    return new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+                });
         user.setActive(active);
         user.setStatus(status);
         userRepository.save(user);
+        log.info("User status updated successfully: id={}", id);
+    }
+
+    public UserAuthDetails getUserAuthDetails(UUID id) {
+        return userRepository.findById(id)
+                .map(user -> UserAuthDetails.builder()
+                        .id(user.getId())
+                        .role(user.getRole())
+                        .status(user.getStatus())
+                        .active(user.isActive())
+                        .build())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found in Auth DB"));
+    }
+
+    public void updatePassword(UUID id, String currentPassword, String newPassword) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mevcut şifre hatalı");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        log.info("Password updated for user: {}", id);
     }
 }

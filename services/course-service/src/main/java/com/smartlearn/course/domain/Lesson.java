@@ -6,7 +6,7 @@ import lombok.*;
 import java.util.UUID;
 
 @Entity
-@Table(name = "lessons")
+@Table(name = "course_lessons")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -24,8 +24,12 @@ public class Lesson {
     @Column(name = "video_url")
     private String videoUrl;
 
-    @Column(name = "duration_seconds")
-    private int durationSeconds;
+    @Column(name = "duration")
+    private Integer duration;
+
+    @Column(name = "type", nullable = false, length = 20)
+    @Builder.Default
+    private String type = "video";
 
     @Column(name = "order_index")
     private int orderIndex;

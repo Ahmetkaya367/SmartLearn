@@ -74,6 +74,15 @@ CREATE TABLE messages (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE system_settings (
+    setting_key VARCHAR(100) PRIMARY KEY,
+    setting_value TEXT NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO system_settings (setting_key, setting_value) VALUES 
+('support_email', 'destek@smartlearn.com');
+
 INSERT INTO user_profiles (id, email, full_name, avatar_url, status) VALUES 
 ('11111111-1111-1111-1111-111111111111', 'admin@learnify.com', 'Ahmet Yılmaz', 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop', 'ACTIVE'),
 ('22222222-2222-2222-2222-222222222222', 'sarah@instructor.com', 'Seda Yılmaz', 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop', 'ACTIVE'),
@@ -131,8 +140,24 @@ CREATE TABLE courses (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE course_sections (
+CREATE TABLE course_categories (
     id UUID PRIMARY KEY,
+    name VARCHAR(100) UNIQUE NOT NULL
+);
+
+-- Varsayılan kategoriler
+INSERT INTO course_categories (id, name) VALUES 
+    (gen_random_uuid(), 'Yazılım'),
+    (gen_random_uuid(), 'Veri Bilimi'),
+    (gen_random_uuid(), 'Pazarlama'),
+    (gen_random_uuid(), 'Tasarım'),
+    (gen_random_uuid(), 'Finans'),
+    (gen_random_uuid(), 'Fotoğrafçılık'),
+    (gen_random_uuid(), 'İşletme'),
+    (gen_random_uuid(), 'Bilişim ve Güvenlik');
+
+CREATE TABLE course_sections (
+    id UUID PRIMARY KEY, 
     course_id UUID REFERENCES courses(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
     order_index INT NOT NULL
@@ -142,7 +167,7 @@ CREATE TABLE course_lessons (
     id UUID PRIMARY KEY,
     section_id UUID REFERENCES course_sections(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
-    duration VARCHAR(20),
+    duration INT,
     type VARCHAR(20) NOT NULL CHECK (type IN ('video', 'article', 'quiz')),
     video_url VARCHAR(500),
     is_preview BOOLEAN DEFAULT FALSE,
@@ -167,34 +192,36 @@ CREATE TABLE target_audience (
     audience TEXT NOT NULL
 );
 
+CREATE TABLE course_reviews (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    course_id UUID NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL,
+    user_name VARCHAR(255),
+    rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    comment TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(course_id, user_id)
+);
+
 INSERT INTO courses (id, title, description, instructor_id, category, price, original_price, rating, review_count, student_count, duration, level, thumbnail_url, is_bestseller, status) VALUES 
 ('a1111111-1111-1111-1111-111111111111', 'Kapsamlı Web Geliştirme Eğitimi', 'HTML, CSS, JavaScript, React ve Node.js ögrenin', '22222222-2222-2222-2222-222222222222', 'Yazılım', 49.99, 199.99, 4.8, 12543, 45230, '42 saat', 'Başlangıç', 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&h=450&fit=crop', TRUE, 'PUBLISHED'),
 ('88888888-8888-8888-8888-888888888888', 'İleri Seviye React Tasarım Kalıpları', 'İleri seviye React konseptleri', '22222222-2222-2222-2222-222222222222', 'Yazılım', 49.99, 150.00, 4.5, 120, 500, '30 saat', 'İleri', 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&h=450&fit=crop', FALSE, 'PUBLISHED');
+
+INSERT INTO course_reviews (id, course_id, user_id, user_name, rating, comment) VALUES 
+('61111111-1111-1111-1111-111111111111', 'a1111111-1111-1111-1111-111111111111', '33333333-3333-3333-3333-333333333333', 'Can Demir', 5, 'Bu kurs tüm beklentilerimi aştı!');
 
 INSERT INTO course_sections (id, course_id, title, order_index) VALUES 
 ('51111111-1111-1111-1111-111111111111', 'a1111111-1111-1111-1111-111111111111', 'Giriş & Kurulum', 1);
 
 INSERT INTO course_lessons (id, section_id, title, duration, type, is_preview, order_index) VALUES 
-('11111111-0000-0000-0000-000000000001', '51111111-1111-1111-1111-111111111111', 'Kursa Hoş Geldiniz', '5:32', 'video', TRUE, 1);
+('11111111-0000-0000-0000-000000000001', '51111111-1111-1111-1111-111111111111', 'Kursa Hoş Geldiniz', 332, 'video', TRUE, 1);
 
 -- ==========================================
--- 4. REVIEW SERVICE SCHEMA (reviewdb)
+-- 4. REVIEW SERVICE SCHEMA (reviewdb) - MOVED TO COURSDB
 -- ==========================================
 \c reviewdb
 
-CREATE TABLE course_reviews (
-    id UUID PRIMARY KEY,
-    course_id UUID NOT NULL,
-    user_id UUID NOT NULL,
-    user_name VARCHAR(255) NOT NULL,
-    user_avatar VARCHAR(500),
-    rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
-    comment TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
-INSERT INTO course_reviews (id, course_id, user_id, user_name, user_avatar, rating, comment) VALUES 
-('61111111-1111-1111-1111-111111111111', 'a1111111-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111111', 'Murat Çelik', 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop', 5, 'Bu kurs tüm beklentilerimi aştı!');
+-- reviewdb is kept for potential future separate microservice but current reviews are in coursedb
 
 -- ==========================================
 -- 5. ENROLLMENT SERVICE SCHEMA (enrollmentdb)
@@ -209,6 +236,16 @@ CREATE TABLE enrollments (
     last_accessed_at TIMESTAMP WITH TIME ZONE,
     enrolled_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(user_id, course_id)
+);
+
+CREATE TABLE enrollment_lesson_progress (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    enrollment_id UUID REFERENCES enrollments(id) ON DELETE CASCADE,
+    lesson_id UUID NOT NULL,
+    watched_seconds INT DEFAULT 0,
+    is_completed BOOLEAN DEFAULT FALSE,
+    last_updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(enrollment_id, lesson_id)
 );
 
 CREATE TABLE enrollment_lessons_completed (

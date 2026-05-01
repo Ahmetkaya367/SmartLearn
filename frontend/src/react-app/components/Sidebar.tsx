@@ -20,27 +20,28 @@ export function Sidebar() {
     if (!user) return null;
 
     const adminLinks = [
-        { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
-        { name: "Users", href: "/admin/users", icon: Users },
-        { name: "Courses", href: "/admin/courses", icon: BookOpen },
-        { name: "Categories", href: "/admin/categories", icon: BarChart3 },
-        { name: "Settings", href: "/admin/settings", icon: Settings },
+        { name: "Panel", href: "/admin", icon: LayoutDashboard },
+        { name: "Kullanıcılar", href: "/admin/users", icon: Users },
+        { name: "Kurslar", href: "/admin/courses", icon: BookOpen },
+        { name: "Kategoriler", href: "/admin/categories", icon: BarChart3 },
+        { name: "Ayarlar", href: "/admin/settings", icon: Settings },
     ];
 
     const instructorLinks = [
-        { name: "Dashboard", href: "/instructor", icon: LayoutDashboard },
-        { name: "My Courses", href: "/instructor/my-courses", icon: BookOpen },
-        { name: "New Course", href: "/instructor/new", icon: PlusCircle },
-        { name: "Students", href: "/instructor/students", icon: Users },
-        { name: "Earnings", href: "/instructor/earnings", icon: Wallet },
-        { name: "Messages", href: "/instructor/messages", icon: MessageSquare },
+        { name: "Panel", href: "/instructor", icon: LayoutDashboard },
+        { name: "Kurslarım", href: "/instructor/my-courses", icon: BookOpen },
+        { name: "Yeni Kurs", href: "/instructor/new", icon: PlusCircle },
+        { name: "Öğrenciler", href: "/instructor/students", icon: Users },
+        { name: "Kazançlar", href: "/instructor/earnings", icon: Wallet },
+        { name: "Mesajlar", href: "/instructor/messages", icon: MessageSquare },
+        { name: "Profil", href: "/instructor/profile", icon: Settings },
     ];
 
     const studentLinks = [
-        { name: "My Learning", href: "/student", icon: LayoutDashboard },
-        { name: "Discover", href: "/courses", icon: BookOpen },
-        { name: "Certificates", href: "/student/certificates", icon: GraduationCap },
-        { name: "Profile", href: "/student/profile", icon: Settings },
+        { name: "Öğrenimim", href: "/student", icon: LayoutDashboard },
+        { name: "Sertifikalar", href: "/student/certificates", icon: GraduationCap },
+        { name: "Mesajlar", href: "/student/messages", icon: MessageSquare },
+        { name: "Profil", href: "/student/profile", icon: Settings },
     ];
 
     const links = user.role === "admin" ? adminLinks : user.role === "instructor" ? instructorLinks : studentLinks;

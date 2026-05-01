@@ -22,6 +22,8 @@ import {
   List,
   Star,
   Users,
+  RotateCcw,
+  Lock,
 } from "lucide-react";
 import { apiService } from "@/react-app/lib/apiService";
 
@@ -55,24 +57,74 @@ export default function StudentCourseViewer() {
   const [isMuted, setIsMuted] = useState(false);
   const [videoProgress, setVideoProgress] = useState(0);
   const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
+  const [enrollmentId, setEnrollmentId] = useState<string | null>(null);
+  const [overallProgress, setOverallProgress] = useState<number>(0);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const lastProgressUpdate = useRef<number>(0);
 
   useEffect(() => {
     const fetchCourse = async () => {
       if (!id) return;
       try {
+        setLoading(true);
         const data = await apiService.getCourseById(id);
         setCourse(data);
 
-        // Auto-select the first lesson
-        if (data.sections && data.sections.length > 0) {
-          const firstSection = data.sections[0];
-          setExpandedSections(new Set([firstSection.id]));
-          setActiveSectionId(firstSection.id);
-          if (firstSection.lessons && firstSection.lessons.length > 0) {
-            setActiveLesson(firstSection.lessons[0]);
+        // Önce öğrencinin genel istatistiklerinden bu kursun kaydını bul
+        const stats = await apiService.getStudentStats();
+        const currentProgress = stats?.inProgress?.find((p: any) => p.courseId === id);
+
+        if (currentProgress && currentProgress.enrollmentId) {
+          setEnrollmentId(currentProgress.enrollmentId);
+          setOverallProgress(currentProgress.progress || 0);
+          
+          // NEW: Fetch ALL progress to populate completed lessons
+          try {
+            const allProgress = await apiService.getEnrollmentProgress(currentProgress.enrollmentId);
+            if (Array.isArray(allProgress)) {
+              const completedIds = allProgress
+                .filter((p: any) => p.completed)
+                .map((p: any) => p.lessonId);
+              setCompletedLessons(new Set(completedIds));
+            }
+          } catch (e) {
+            console.error("Failed to fetch all progress", e);
           }
+          
+          // ŞİMDİ: Bu kursta en son hangi saniyede kalmıştık?
+          try {
+            const data = await apiService.getEnrollment(currentProgress.enrollmentId);
+            
+            if (data.sections && data.sections.length > 0) {
+              const lastWatched = data.lastWatchedLesson;
+              let targetLesson = null;
+              let targetSectionId = null;
+
+              if (lastWatched && lastWatched.lessonId) {
+                for (const section of data.sections) {
+                  const found = section.lessons.find((l: any) => l.id === lastWatched.lessonId);
+                  if (found) {
+                    targetLesson = found;
+                    targetSectionId = section.id;
+                    break;
+                  }
+                }
+              }
+
+              if (targetLesson) {
+                await selectLesson(targetLesson, targetSectionId);
+              } else if (data.sections[0].lessons?.[0]) {
+                await selectLesson(data.sections[0].lessons[0], data.sections[0].id);
+              }
+            }
+          } catch (e) {
+            console.error("Last watched fetch failed", e);
+          }
+        } else if (data.sections?.[0]?.lessons?.[0]) {
+          // Kayıt bulunamazsa bile ilk dersi göster
+          await selectLesson(data.sections[0].lessons[0], data.sections[0].id);
         }
+        
       } catch (error) {
         console.error("Failed to fetch course:", error);
       } finally {
@@ -91,14 +143,57 @@ export default function StudentCourseViewer() {
     });
   };
 
-  const selectLesson = (lesson: Lesson, sectionId: string) => {
-    setActiveLesson(lesson);
-    setActiveSectionId(sectionId);
+  const initialSeekTime = useRef<number>(0);
+
+  const selectLesson = async (lesson: Lesson, sectionId: string) => {
     setIsPlaying(false);
     setVideoProgress(0);
+    lastProgressUpdate.current = 0;
+
+    // Önce ilerlemeyi çek, sonra dersi aktif et (başa atma sorununu çözer)
+    if (enrollmentId) {
+      try {
+        const progress = await apiService.getLessonProgress(enrollmentId, lesson.id);
+        const watched = (progress && typeof progress.watchedSeconds !== 'undefined') ? progress.watchedSeconds : 0;
+        
+        initialSeekTime.current = watched;
+        lastProgressUpdate.current = watched; 
+      } catch (e) {
+        console.error("İlerleme çekilirken hata oluştu:", e);
+        initialSeekTime.current = 0;
+        lastProgressUpdate.current = 0;
+      }
+    } else {
+      initialSeekTime.current = 0;
+      lastProgressUpdate.current = 0;
+    }
+
+    setActiveLesson(lesson);
+    setActiveSectionId(sectionId);
+
+    if (videoRef.current) {
+      videoRef.current.pause();
+    }
+  };
+
+  const handleRestart = () => {
     if (videoRef.current) {
       videoRef.current.currentTime = 0;
-      videoRef.current.pause();
+      videoRef.current.play();
+      setIsPlaying(true);
+    }
+  };
+
+  const handleLoadedData = () => {
+    if (videoRef.current && initialSeekTime.current > 0) {
+      const seekTo = initialSeekTime.current;
+      initialSeekTime.current = 0;
+      
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.currentTime = seekTo;
+        }
+      }, 200);
     }
   };
 
@@ -112,6 +207,30 @@ export default function StudentCourseViewer() {
     setIsPlaying(!isPlaying);
   };
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!videoRef.current) return;
+      
+      const video = videoRef.current;
+      
+      if (e.code === 'ArrowLeft') {
+        video.currentTime = Math.max(0, video.currentTime - 10);
+      } else if (e.code === 'ArrowRight') {
+        const nextTime = video.currentTime + 10;
+        if (nextTime <= lastProgressUpdate.current + 2) {
+          video.currentTime = nextTime;
+        }
+      } else if (e.code === 'Space') {
+        e.preventDefault();
+        togglePlay();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isPlaying]);
+
   const toggleMute = () => {
     if (!videoRef.current) return;
     videoRef.current.muted = !isMuted;
@@ -119,15 +238,43 @@ export default function StudentCourseViewer() {
   };
 
   const handleVideoTimeUpdate = () => {
-    if (!videoRef.current) return;
-    const progress = (videoRef.current.currentTime / videoRef.current.duration) * 100;
-    setVideoProgress(isNaN(progress) ? 0 : progress);
+    if (!videoRef.current || isNaN(videoRef.current.duration)) return;
+    
+    const video = videoRef.current;
+    const currentTime = video.currentTime;
+    const duration = video.duration;
+    
+    if (!(window as any).isSeeking) {
+      setVideoProgress((currentTime / duration) * 100);
+    }
+
+    if (enrollmentId && activeLesson) {
+      const currentSeconds = Math.floor(currentTime);
+      
+      // Sadece en uzak noktayı takip et (Backend için)
+      if (currentSeconds > lastProgressUpdate.current) {
+        lastProgressUpdate.current = currentSeconds;
+        
+        // Backend'e 5 saniyede bir gönder
+        const now = Date.now();
+        if (currentSeconds > 0 && (!video.dataset.lastApiCall || now - parseInt(video.dataset.lastApiCall) > 5000)) {
+          video.dataset.lastApiCall = now.toString();
+          apiService.updateLessonProgress(enrollmentId, activeLesson.id, currentSeconds, false).then(res => {
+            if (res?.progressPercent !== undefined) {
+              setOverallProgress(prev => Math.max(prev, res.progressPercent));
+            }
+          });
+        }
+      }
+    }
   };
 
   const handleVideoEnded = () => {
     setIsPlaying(false);
-    if (activeLesson) {
+    if (activeLesson && enrollmentId) {
       setCompletedLessons((prev) => new Set([...prev, activeLesson.id]));
+      // Save completion to backend
+      apiService.updateLessonProgress(enrollmentId, activeLesson.id, Math.floor(videoRef.current?.duration || 0), true);
     }
     goToNextLesson();
   };
@@ -170,9 +317,7 @@ export default function StudentCourseViewer() {
   };
 
   const getOverallProgress = () => {
-    const total = getTotalLessons();
-    if (total === 0) return 0;
-    return Math.round((completedLessons.size / total) * 100);
+    return overallProgress;
   };
 
   if (loading) {
@@ -223,7 +368,7 @@ export default function StudentCourseViewer() {
         >
           <Link to="/student">
             <ChevronLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">My Learning</span>
+            <span className="hidden sm:inline">Öğrenimim</span>
           </Link>
         </Button>
 
@@ -239,11 +384,11 @@ export default function StudentCourseViewer() {
         <div className="flex items-center gap-3 shrink-0">
           <div className="hidden md:flex items-center gap-2 text-xs text-white/60">
             <CheckCircle2 className="w-4 h-4 text-green-400" />
-            <span>{completedLessons.size}/{getTotalLessons()} lessons</span>
+            <span>{completedLessons.size}/{getTotalLessons()} ders tamamlandı</span>
           </div>
           <div className="hidden sm:flex items-center gap-2 w-32">
             <Progress value={getOverallProgress()} className="h-1.5 bg-white/20" />
-            <span className="text-xs text-white/60 shrink-0">{getOverallProgress()}%</span>
+            <span className="text-xs text-white/60 shrink-0">%{getOverallProgress()}</span>
           </div>
           <Button
             variant="ghost"
@@ -273,6 +418,7 @@ export default function StudentCourseViewer() {
                     className="w-full h-full object-contain"
                     onTimeUpdate={handleVideoTimeUpdate}
                     onEnded={handleVideoEnded}
+                    onLoadedData={handleLoadedData}
                     onPlay={() => setIsPlaying(true)}
                     onPause={() => setIsPlaying(false)}
                   />
@@ -284,12 +430,22 @@ export default function StudentCourseViewer() {
                         type="range"
                         min={0}
                         max={100}
+                        step="0.1"
                         value={videoProgress}
+                        onMouseDown={() => { (window as any).isSeeking = true; }}
+                        onMouseUp={() => { (window as any).isSeeking = false; }}
                         onChange={(e) => {
                           if (!videoRef.current) return;
-                          const t = (parseFloat(e.target.value) / 100) * videoRef.current.duration;
+                          const val = parseFloat(e.target.value);
+                          const t = (val / 100) * videoRef.current.duration;
+                          
+                          // İLERİ SARMA ENGELİ: 2 saniye tolerans (sıkılaştırıldı)
+                          if (t > lastProgressUpdate.current + 2) {
+                              return;
+                          }
+                          
                           videoRef.current.currentTime = t;
-                          setVideoProgress(parseFloat(e.target.value));
+                          setVideoProgress(val);
                         }}
                         className="w-full h-1 accent-indigo-500 cursor-pointer"
                       />
@@ -297,11 +453,20 @@ export default function StudentCourseViewer() {
                     {/* Control Buttons */}
                     <div className="flex items-center gap-2 px-4 pb-3">
                       <button
-                        onClick={goToPrevLesson}
+                        onClick={handleRestart}
                         className="text-white/80 hover:text-white transition-colors p-1"
-                        title="Previous lesson"
+                        title="Başa Al"
                       >
                         <SkipBack className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (videoRef.current) videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime - 10);
+                        }}
+                        className="text-white/80 hover:text-white transition-colors p-1"
+                        title="10sn Geri"
+                      >
+                        <RotateCcw className="w-5 h-5" />
                       </button>
                       <button
                         onClick={togglePlay}
@@ -312,7 +477,7 @@ export default function StudentCourseViewer() {
                       <button
                         onClick={goToNextLesson}
                         className="text-white/80 hover:text-white transition-colors p-1"
-                        title="Next lesson"
+                        title="Sonraki ders"
                       >
                         <SkipForward className="w-5 h-5" />
                       </button>
@@ -342,12 +507,12 @@ export default function StudentCourseViewer() {
                   </div>
                   <div className="text-center">
                     <p className="text-lg font-medium text-white/60">
-                      {activeLesson ? activeLesson.title : "Select a lesson to begin"}
+                      {activeLesson ? activeLesson.title : "Başlamak için bir ders seçin"}
                     </p>
                     <p className="text-sm mt-1">
                       {activeLesson?.videoUrl === undefined || activeLesson?.videoUrl === null
-                        ? "No video available for this lesson"
-                        : "Loading video..."}
+                        ? "Bu ders için video bulunmuyor"
+                        : "Video yükleniyor..."}
                     </p>
                   </div>
                 </div>
@@ -373,7 +538,7 @@ export default function StudentCourseViewer() {
                     {completedLessons.has(activeLesson.id) && (
                       <Badge className="bg-green-500/20 text-green-400 border-green-500/30 gap-1">
                         <CheckCircle2 className="w-3 h-3" />
-                        Completed
+                        Tamamlandı
                       </Badge>
                     )}
                   </div>
@@ -386,67 +551,44 @@ export default function StudentCourseViewer() {
                     className="border-white/20 text-white/70 hover:bg-white/10 hover:text-white"
                   >
                     <ChevronLeft className="w-4 h-4" />
-                    Prev
+                    Önceki
                   </Button>
                   <Button
                     size="sm"
                     onClick={goToNextLesson}
                     className="bg-indigo-600 hover:bg-indigo-500 gap-1"
                   >
-                    Next
+                    Sonraki
                     <ChevronRight className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
 
-              {/* Mark complete button */}
-              <Button
-                variant="outline"
-                className={`mb-8 gap-2 border-white/20 ${
-                  completedLessons.has(activeLesson.id)
-                    ? "bg-green-500/20 text-green-400 border-green-500/30"
-                    : "text-white/70 hover:bg-white/10 hover:text-white"
-                }`}
-                onClick={() => {
-                  if (activeLesson) {
-                    setCompletedLessons((prev) => {
-                      const next = new Set(prev);
-                      if (next.has(activeLesson.id)) next.delete(activeLesson.id);
-                      else next.add(activeLesson.id);
-                      return next;
-                    });
-                  }
-                }}
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                {completedLessons.has(activeLesson.id) ? "Mark as Incomplete" : "Mark as Complete"}
-              </Button>
-
               {/* Course Info */}
               <div className="border border-white/10 rounded-2xl p-6 bg-white/5 space-y-6">
-                <h3 className="text-lg font-semibold text-white">About this course</h3>
+                <h3 className="text-lg font-semibold text-white">Kurs Hakkında</h3>
                 <p className="text-white/60 leading-relaxed">{course.description || course.longDescription}</p>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
                   <div className="text-center p-3 rounded-xl bg-white/5">
                     <Star className="w-5 h-5 text-yellow-400 mx-auto mb-1" />
                     <p className="text-white font-bold">{course.rating || "—"}</p>
-                    <p className="text-white/40 text-xs">Rating</p>
+                    <p className="text-white/40 text-xs">Puan</p>
                   </div>
                   <div className="text-center p-3 rounded-xl bg-white/5">
                     <Users className="w-5 h-5 text-indigo-400 mx-auto mb-1" />
                     <p className="text-white font-bold">{(course.studentCount || 0).toLocaleString()}</p>
-                    <p className="text-white/40 text-xs">Students</p>
+                    <p className="text-white/40 text-xs">Öğrenci</p>
                   </div>
                   <div className="text-center p-3 rounded-xl bg-white/5">
                     <Clock className="w-5 h-5 text-green-400 mx-auto mb-1" />
                     <p className="text-white font-bold">{course.duration || "—"}</p>
-                    <p className="text-white/40 text-xs">Duration</p>
+                    <p className="text-white/40 text-xs">Süre</p>
                   </div>
                   <div className="text-center p-3 rounded-xl bg-white/5">
                     <BookOpen className="w-5 h-5 text-pink-400 mx-auto mb-1" />
                     <p className="text-white font-bold">{getTotalLessons()}</p>
-                    <p className="text-white/40 text-xs">Lessons</p>
+                    <p className="text-white/40 text-xs">Ders</p>
                   </div>
                 </div>
               </div>
@@ -458,9 +600,9 @@ export default function StudentCourseViewer() {
         {sidebarOpen && (
           <aside className="w-80 xl:w-96 bg-[#1c1c3a] border-l border-white/10 flex flex-col shrink-0 overflow-hidden">
             <div className="px-4 py-3 border-b border-white/10">
-              <h3 className="text-white font-semibold text-sm">Course Content</h3>
+              <h3 className="text-white font-semibold text-sm">Kurs İçeriği</h3>
               <p className="text-white/40 text-xs mt-0.5">
-                {completedLessons.size} / {getTotalLessons()} lessons completed
+                {completedLessons.size} / {getTotalLessons()} ders tamamlandı
               </p>
               <Progress value={getOverallProgress()} className="h-1 mt-2 bg-white/10" />
             </div>
@@ -474,12 +616,12 @@ export default function StudentCourseViewer() {
                     className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/5 transition-colors text-left"
                   >
                     <div className="flex-1 min-w-0">
-                      <span className="text-xs text-white/40 font-medium">Section {idx + 1}</span>
+                      <span className="text-xs text-white/40 font-medium">{idx + 1}. Bölüm</span>
                       <p className="text-white/90 text-sm font-medium truncate">{section.title}</p>
                       <p className="text-white/40 text-xs mt-0.5">
-                        {section.lessons.length} lesson{section.lessons.length !== 1 ? "s" : ""}
+                        {section.lessons.length} ders
                         {" · "}
-                        {section.lessons.filter(l => completedLessons.has(l.id)).length} done
+                        {section.lessons.filter(l => completedLessons.has(l.id)).length} tamamlandı
                       </p>
                     </div>
                     <ChevronDown
@@ -492,20 +634,42 @@ export default function StudentCourseViewer() {
                   {/* Lessons List */}
                   {expandedSections.has(section.id) && (
                     <div className="bg-black/20">
-                      {section.lessons.map((lesson: Lesson) => {
+                      {section.lessons.map((lesson: Lesson, lessonIdx: number) => {
                         const isActive = activeLesson?.id === lesson.id;
                         const isDone = completedLessons.has(lesson.id);
+                        
+                        // KİLİT MANTIĞI:
+                        // 1. Ders her zaman açık.
+                        // Diğer dersler ise ancak bir önceki ders "Tamamlandı" (completedLessons içinde) ise açılır.
+                        let isLocked = false;
+                        if (idx === 0 && lessonIdx === 0) {
+                            isLocked = false;
+                        } else {
+                            // Tüm dersleri düz bir listede hayal et
+                            const allLessons = getAllLessons();
+                            const currentIdxInAll = allLessons.findIndex(x => x.lesson.id === lesson.id);
+                            if (currentIdxInAll > 0) {
+                                const prevLessonId = allLessons[currentIdxInAll - 1].lesson.id;
+                                isLocked = !completedLessons.has(prevLessonId);
+                            }
+                        }
+
                         return (
                           <button
                             key={lesson.id}
-                            onClick={() => selectLesson(lesson, section.id)}
-                            className={`w-full flex items-start gap-3 px-4 py-3 text-left transition-all hover:bg-white/5 ${
+                            disabled={isLocked && !isActive}
+                            onClick={() => !isLocked && selectLesson(lesson, section.id)}
+                            className={`w-full flex items-start gap-3 px-4 py-3 text-left transition-all ${
+                              isLocked ? "opacity-50 cursor-not-allowed" : "hover:bg-white/5"
+                            } ${
                               isActive ? "bg-indigo-600/20 border-l-2 border-indigo-500" : "border-l-2 border-transparent"
                             }`}
                           >
                             <div className="mt-0.5 shrink-0">
                               {isDone ? (
                                 <CheckCircle2 className="w-4 h-4 text-green-400" />
+                              ) : isLocked ? (
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-lock w-4 h-4 text-white/20"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                               ) : isActive ? (
                                 <div className="w-4 h-4 rounded-full bg-indigo-500 flex items-center justify-center">
                                   <Play className="w-2 h-2 text-white fill-current ml-0.5" />
@@ -515,7 +679,7 @@ export default function StudentCourseViewer() {
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className={`text-xs font-medium truncate ${isActive ? "text-indigo-300" : "text-white/70"}`}>
+                              <p className={`text-xs font-medium truncate ${isActive ? "text-indigo-300" : isLocked ? "text-white/30" : "text-white/70"}`}>
                                 {lesson.title}
                               </p>
                               <p className="text-white/30 text-xs mt-0.5">{lesson.duration || "—"}</p>

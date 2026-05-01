@@ -52,7 +52,12 @@ export default function StudentCertificates() {
                             </div>
 
                             <div className="flex items-center gap-3 mt-6 pt-4 border-t">
-                                <Button variant="outline" size="sm" className="flex-1 gap-2">
+                                <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="flex-1 gap-2"
+                                    onClick={() => window.open(cert.certificateUrl, '_blank')}
+                                >
                                     <Download className="w-4 h-4" /> İndir
                                 </Button>
                                 <Button variant="ghost" size="sm" className="gap-2">

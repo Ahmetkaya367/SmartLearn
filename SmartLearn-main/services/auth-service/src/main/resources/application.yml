@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: auth-service
+  config:
+    import: "optional:configserver:${SPRING_CONFIG_IMPORT_URL:http://localhost:8888}"
+  profiles:
+    active: dev

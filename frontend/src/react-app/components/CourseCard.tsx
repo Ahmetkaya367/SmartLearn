@@ -71,7 +71,7 @@ export function CourseCard({ course }: CourseCardProps) {
           </div>
           <div className="flex items-center gap-1">
             <Users className="w-4 h-4" />
-            <span>{(course.studentCount / 1000).toFixed(1)}k</span>
+            <span>{course.studentCount.toLocaleString()}</span>
           </div>
           <div className="flex items-center gap-1">
             <Clock className="w-4 h-4" />
@@ -81,10 +81,10 @@ export function CourseCard({ course }: CourseCardProps) {
 
         {/* Price */}
         <div className="flex items-center gap-2">
-          <span className="text-2xl font-bold text-foreground">${course.price}</span>
+          <span className="text-2xl font-bold text-foreground">{course.price} ₺</span>
           {course.originalPrice && (
             <span className="text-sm text-muted-foreground line-through">
-              ${course.originalPrice}
+              {course.originalPrice} ₺
             </span>
           )}
         </div>

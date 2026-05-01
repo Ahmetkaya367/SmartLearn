@@ -30,6 +30,11 @@ export default function InstructorEditCourse() {
         longDescription: "",
         sections: []
     });
+    const [categories, setCategories] = useState<string[]>([]);
+
+    useEffect(() => {
+        apiService.getCategories().then(setCategories);
+    }, []);
 
     useEffect(() => {
         const fetchCourse = async () => {
@@ -39,8 +44,8 @@ export default function InstructorEditCourse() {
                 const d: any = data;
                 setCourseData({
                     ...d,
-                    category: d.category || "",
-                    level: d.level || "",
+                    category: (d.category || "").trim(),
+                    level: (d.level || "").trim(),
                 });
             } catch (err) {
                 console.error("Failed to fetch course", err);
@@ -124,7 +129,9 @@ export default function InstructorEditCourse() {
             id: crypto.randomUUID(),
             title: "Yeni Ders",
             videoUrl: "",
+            duration: "0:00",
             durationSeconds: 0,
+            type: "video",
             orderIndex: newSections[sectionIndex].lessons.length,
             isPreview: false
         });
@@ -143,7 +150,28 @@ export default function InstructorEditCourse() {
     const handleLessonVideoUpload = async (sectionIndex: number, lessonIndex: number, e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+        
         try {
+            // Get actual video duration
+            const video = document.createElement('video');
+            video.preload = 'metadata';
+            video.onloadedmetadata = () => {
+                window.URL.revokeObjectURL(video.src);
+                const totalSeconds = Math.round(video.duration);
+                const minutes = Math.floor(totalSeconds / 60);
+                const seconds = totalSeconds % 60;
+                const formattedDuration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                
+                const newSections = [...courseData.sections];
+                newSections[sectionIndex].lessons[lessonIndex] = {
+                    ...newSections[sectionIndex].lessons[lessonIndex],
+                    duration: formattedDuration,
+                    durationSeconds: totalSeconds
+                };
+                setCourseData({ ...courseData, sections: newSections });
+            };
+            video.src = URL.createObjectURL(file);
+            
             const res = await apiService.uploadMedia(file);
             updateLesson(sectionIndex, lessonIndex, "videoUrl", res.url);
         } catch (err) {
@@ -204,32 +232,36 @@ export default function InstructorEditCourse() {
                                 <Select value={courseData.category} onValueChange={(val) => setCourseData({...courseData, category: val})}>
                                     <SelectTrigger><SelectValue placeholder="Seçiniz" /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="dev">Yazılım</SelectItem>
-                                        <SelectItem value="design">Tasarım</SelectItem>
-                                        <SelectItem value="biz">İşletme</SelectItem>
-                                        <SelectItem value="Development">Development</SelectItem>
-                                        <SelectItem value="Business">Business</SelectItem>
-                                        <SelectItem value="Design">Design</SelectItem>
+                                        {categories.map((cat) => (
+                                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div className="space-y-2">
-                                <Label>Seviye</Label>
-                                <Select value={courseData.level} onValueChange={(val) => setCourseData({...courseData, level: val})}>
-                                    <SelectTrigger><SelectValue placeholder="Seçiniz" /></SelectTrigger>
+                                <Label className="flex justify-between">
+                                    Seviye 
+                                    <span className="text-[10px] text-muted-foreground font-normal">
+                                        (Mevcut: {courseData.level || "Yok"})
+                                    </span>
+                                </Label>
+                                <Select 
+                                    key={id + (courseData.level || "loading")}
+                                    value={courseData.level || undefined} 
+                                    onValueChange={(val) => setCourseData({...courseData, level: val})}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Seçiniz" />
+                                    </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="Başlangıç">Başlangıç</SelectItem>
                                         <SelectItem value="Orta">Orta</SelectItem>
                                         <SelectItem value="İleri">İleri</SelectItem>
-                                        <SelectItem value="Beginner">Beginner</SelectItem>
-                                        <SelectItem value="Intermediate">Intermediate</SelectItem>
-                                        <SelectItem value="Advanced">Advanced</SelectItem>
-                                        <SelectItem value="All Levels">All Levels</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="price">Fiyat ($)</Label>
+                                <Label htmlFor="price">Fiyat (₺)</Label>
                                 <Input id="price" type="number" value={courseData.price || 0} onChange={(e) => setCourseData({...courseData, price: parseFloat(e.target.value)})} />
                             </div>
                         </div>
@@ -240,7 +272,7 @@ export default function InstructorEditCourse() {
                     <Card className="p-6 space-y-6 mt-4">
                         <div className="space-y-2">
                             <Label>Kurs Görseli</Label>
-                            {courseData.thumbnail && (
+                            {courseData.thumbnail && courseData.thumbnail.trim() !== "" && (
                                 <div className="mb-4">
                                     <img src={courseData.thumbnail} alt="Thumbnail preview" className="w-64 h-36 object-cover rounded-lg border" />
                                 </div>
@@ -259,7 +291,7 @@ export default function InstructorEditCourse() {
 
                         <div className="space-y-2 pt-6 border-t">
                             <Label>Tanıtım Videosu</Label>
-                            {courseData.videoPreviewUrl && (
+                            {courseData.videoPreviewUrl && courseData.videoPreviewUrl.trim() !== "" && (
                                 <div className="mb-4">
                                     <video src={courseData.videoPreviewUrl} controls className="w-80 h-45 object-cover rounded-lg border bg-black" />
                                 </div>

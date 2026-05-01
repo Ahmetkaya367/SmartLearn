@@ -27,8 +27,10 @@ export default function AdminUsers() {
     }, []);
 
     const filteredUsers = users.filter(u =>
-        u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        u.email.toLowerCase().includes(searchQuery.toLowerCase())
+        u.role !== "admin" && (
+            u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            u.email.toLowerCase().includes(searchQuery.toLowerCase())
+        )
     );
 
     const handleBan = async (id: string) => {
@@ -75,10 +77,10 @@ export default function AdminUsers() {
                     <table className="w-full text-sm">
                         <thead className="bg-muted/50 border-b">
                             <tr>
-                                <th className="text-left p-4 font-semibold">User</th>
-                                <th className="text-left p-4 font-semibold">Role</th>
-                                <th className="text-left p-4 font-semibold">Status</th>
-                                <th className="text-right p-4 font-semibold">Actions</th>
+                                <th className="text-left p-4 font-semibold">Kullanıcı</th>
+                                <th className="text-left p-4 font-semibold">Rol</th>
+                                <th className="text-left p-4 font-semibold">Durum</th>
+                                <th className="text-right p-4 font-semibold">İşlemler</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -104,12 +106,12 @@ export default function AdminUsers() {
                                     </td>
                                     <td className="p-4">
                                         <Badge variant="outline" className="capitalize">
-                                            {u.role}
+                                            {u.role === "admin" ? "Yönetici" : u.role === "instructor" ? "Eğitmen" : "Öğrenci"}
                                         </Badge>
                                     </td>
                                     <td className="p-4">
                                         <Badge variant={u.status === "ACTIVE" || !u.status ? "secondary" : "destructive"}>
-                                            {u.status === "BANNED" ? "Banlı" : (u.status || "Aktif")}
+                                            {u.status === "BANNED" ? "Engelli" : (u.status === "ACTIVE" || !u.status ? "Aktif" : u.status)}
                                         </Badge>
                                     </td>
                                     <td className="p-4 text-right">
@@ -118,9 +120,9 @@ export default function AdminUsers() {
                                                 variant="ghost" 
                                                 size="icon" 
                                                 className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                                                title="Activate User"
+                                                title="Kullanıcıyı Aktifleştir"
                                                 onClick={() => handleActivate(u.id)}
-                                                disabled={u.status === 'ACTIVE'}
+                                                disabled={u.status === 'ACTIVE' || !u.status}
                                             >
                                                 <UserCheck className="w-4 h-4" />
                                             </Button>
@@ -128,7 +130,7 @@ export default function AdminUsers() {
                                                 variant="ghost" 
                                                 size="icon" 
                                                 className="text-destructive hover:bg-destructive/10"
-                                                title="Ban User"
+                                                title="Kullanıcıyı Engelle"
                                                 onClick={() => handleBan(u.id)}
                                                 disabled={u.status === 'BANNED'}
                                             >

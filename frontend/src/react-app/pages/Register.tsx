@@ -8,14 +8,17 @@ import { Input } from "@/react-app/components/ui/input";
 import { Button } from "@/react-app/components/ui/button";
 import { Label } from "@/react-app/components/ui/label";
 import { BookOpen, Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/react-app/components/ui/select";
+import { apiService } from "@/react-app/lib/apiService";
 
 const registerSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  name: z.string().min(2, "İsim en az 2 karakter olmalıdır"),
+  email: z.string().email("Geçersiz e-posta adresi"),
+  password: z.string().min(6, "Şifre en az 6 karakter olmalıdır"),
   confirmPassword: z.string(),
+  role: z.enum(["student", "instructor"]).default("student")
 }).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
+  message: "Şifreler eşleşmiyor",
   path: ["confirmPassword"],
 });
 
@@ -28,20 +31,31 @@ export default function Register() {
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
+    defaultValues: {
+      role: "student"
+    }
   });
+
+  const roleValue = watch("role");
 
   const onSubmit = async (data: RegisterValues) => {
     try {
       setError(null);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      console.log("Registration data:", data);
+      await apiService.register({
+        name: data.name,
+        email: data.email,
+        password: data.password,
+        role: data.role
+      });
+      // Optionally login the user immediately, but here we navigate to login
       navigate("/login");
     } catch (err: any) {
-      setError(err.message || "Registration failed");
+      setError(err.message || "Kayıt işlemi başarısız oldu");
     }
   };
 
@@ -52,9 +66,9 @@ export default function Register() {
           <Link to="/" className="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 mb-4 transition-transform hover:scale-105">
             <BookOpen className="w-6 h-6 text-primary-foreground" />
           </Link>
-          <h1 className="text-2xl font-bold text-foreground">Create account</h1>
+          <h1 className="text-2xl font-bold text-foreground">Hesap Oluştur</h1>
           <p className="text-sm text-muted-foreground mt-2">
-            Start your learning journey today
+            Öğrenme yolculuğunuza bugün başlayın
           </p>
         </div>
 
@@ -66,11 +80,11 @@ export default function Register() {
 
         <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
           <div className="space-y-2">
-            <Label htmlFor="name" className={errors.name ? "text-destructive" : ""}>Full name</Label>
+            <Label htmlFor="name" className={errors.name ? "text-destructive" : ""}>Ad Soyad</Label>
             <Input
               id="name"
               type="text"
-              placeholder="John Doe"
+              placeholder="Ahmet Yılmaz"
               className={errors.name ? "h-11 border-destructive focus-visible:ring-destructive" : "h-11"}
               {...register("name")}
             />
@@ -80,11 +94,11 @@ export default function Register() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email" className={errors.email ? "text-destructive" : ""}>Email</Label>
+            <Label htmlFor="email" className={errors.email ? "text-destructive" : ""}>E-posta</Label>
             <Input
               id="email"
               type="email"
-              placeholder="you@example.com"
+              placeholder="ornek@email.com"
               className={errors.email ? "h-11 border-destructive focus-visible:ring-destructive" : "h-11"}
               {...register("email")}
             />
@@ -94,7 +108,7 @@ export default function Register() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password" className={errors.password ? "text-destructive" : ""}>Password</Label>
+            <Label htmlFor="password" className={errors.password ? "text-destructive" : ""}>Şifre</Label>
             <Input
               id="password"
               type="password"
@@ -108,7 +122,7 @@ export default function Register() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword" className={errors.confirmPassword ? "text-destructive" : ""}>Confirm password</Label>
+            <Label htmlFor="confirmPassword" className={errors.confirmPassword ? "text-destructive" : ""}>Şifreyi Onayla</Label>
             <Input
               id="confirmPassword"
               type="password"
@@ -121,20 +135,36 @@ export default function Register() {
             )}
           </div>
 
+          <div className="space-y-2">
+            <Label>Hesap Türü</Label>
+            <Select 
+              value={roleValue} 
+              onValueChange={(val: any) => setValue("role", val)}
+            >
+              <SelectTrigger className="h-11">
+                <SelectValue placeholder="Hesap türü seçin" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="student">Öğrenci</SelectItem>
+                <SelectItem value="instructor">Eğitmen</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <Button type="submit" className="w-full h-11" disabled={isSubmitting}>
             {isSubmitting ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
-              "Create account"
+              "Hesap Oluştur"
             )}
           </Button>
         </form>
 
         <div className="mt-6 text-center">
           <p className="text-sm text-muted-foreground">
-            Already have an account?{" "}
+            Zaten bir hesabınız var mı?{" "}
             <Link to="/login" className="text-primary font-medium hover:underline">
-              Sign in
+              Giriş Yap
             </Link>
           </p>
         </div>
