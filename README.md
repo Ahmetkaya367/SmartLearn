@@ -1,8 +1,10 @@
+
 # SmartLearn Microservices
 
  microservices platform for online course management. This project implements a distributed architecture using Spring Cloud, Apache Kafka, and Docker.
 
 ## 🏗 Architecture Overview
+<img width="1332" height="726" alt="Ekran Resmi 2026-06-20 18 16 13" src="https://github.com/user-attachments/assets/ee587590-f1e7-4dd6-8d63-e24d5315cc17" />
 
 The system follows a microservices pattern with independent databases, centralized configuration, and event-driven communication.
 
