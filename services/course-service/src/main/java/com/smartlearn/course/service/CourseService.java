@@ -157,15 +157,48 @@ public class CourseService {
 
                 // Update curriculum
                 if (request.getSections() != null) {
+                        java.util.List<Section> existingSections = new java.util.ArrayList<>(course.getSections());
                         course.getSections().clear();
+
                         for (SectionDto sectionDto : request.getSections()) {
-                                Section section = new Section();
+                                Section section = null;
+                                if (sectionDto.getId() != null) {
+                                    section = existingSections.stream()
+                                            .filter(s -> s.getId().equals(sectionDto.getId()))
+                                            .findFirst().orElse(null);
+                                }
+                                if (section == null) {
+                                    section = new Section();
+                                }
+                                
                                 section.setTitle(sectionDto.getTitle());
                                 section.setOrderIndex(sectionDto.getOrderIndex());
 
+                                java.util.List<Lesson> existingLessons = new java.util.ArrayList<>(section.getLessons());
+                                section.getLessons().clear();
+
                                 if (sectionDto.getLessons() != null) {
                                         for (LessonDto lessonDto : sectionDto.getLessons()) {
-                                                Lesson lesson = new Lesson();
+                                                Lesson lesson = null;
+                                                if (lessonDto.getId() != null) {
+                                                    lesson = existingLessons.stream()
+                                                            .filter(l -> l.getId().equals(lessonDto.getId()))
+                                                            .findFirst().orElse(null);
+                                                }
+                                                if (lesson == null) {
+                                                    lesson = new Lesson();
+                                                    lesson.setVersion(1);
+                                                } else {
+                                                    // Check if content changed
+                                                    boolean changed = false;
+                                                    if (!java.util.Objects.equals(lesson.getVideoUrl(), lessonDto.getVideoUrl())) changed = true;
+                                                    if (!java.util.Objects.equals(lesson.getDuration(), lessonDto.getDurationSeconds())) changed = true;
+                                                    if (!java.util.Objects.equals(lesson.getTitle(), lessonDto.getTitle())) changed = true;
+                                                    if (changed) {
+                                                        lesson.setVersion(lesson.getVersion() == null ? 2 : lesson.getVersion() + 1);
+                                                    }
+                                                }
+                                                
                                                 lesson.setTitle(lessonDto.getTitle());
                                                 lesson.setVideoUrl(lessonDto.getVideoUrl());
                                                 lesson.setDuration(lessonDto.getDurationSeconds());
@@ -333,6 +366,7 @@ public class CourseService {
                                                 .type(lesson.getType())
                                                 .orderIndex(lesson.getOrderIndex())
                                                 .isPreview(lesson.isPreview())
+                                                .version(lesson.getVersion() != null ? lesson.getVersion() : 1)
                                                 .build();
                                         })
                                         .collect(Collectors.toList()))

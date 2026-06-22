@@ -14,7 +14,7 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, UUID> {
     List<Enrollment> findByUserId(UUID userId);
 
     List<Enrollment> findByCourseId(UUID courseId);
-    
+
     List<Enrollment> findAllByCourseIdIn(List<UUID> courseIds);
 
     @Query("SELECT COUNT(DISTINCT e.userId) FROM Enrollment e")
@@ -30,4 +30,7 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, UUID> {
     Long countEnrollmentsByCourseIds(List<UUID> courseIds);
 
     Long countByCourseId(UUID courseId);
+
+    @Query("SELECT COALESCE(SUM(e.paidPrice), 0) FROM Enrollment e")
+    Double sumTotalRevenue();
 }

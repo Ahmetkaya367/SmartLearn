@@ -13,6 +13,9 @@ public interface LessonProgressRepository extends JpaRepository<LessonProgress, 
     Optional<LessonProgress> findByEnrollmentIdAndLessonId(UUID enrollmentId, UUID lessonId);
     List<LessonProgress> findByEnrollmentId(UUID enrollmentId);
 
+    @org.springframework.transaction.annotation.Transactional
+    void deleteByLessonId(UUID lessonId);
+
     @org.springframework.data.jpa.repository.Query("SELECT SUM(lp.watchedSeconds) FROM LessonProgress lp JOIN Enrollment e ON lp.enrollmentId = e.id WHERE e.userId = :userId")
     Integer getTotalWatchedSecondsByUserId(@org.springframework.data.repository.query.Param("userId") UUID userId);
 

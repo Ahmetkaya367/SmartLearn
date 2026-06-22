@@ -17,6 +17,9 @@ public interface EnrollmentClient {
     @GetMapping("/api/enrollments/count")
     Long getTotalEnrollments();
 
+    @GetMapping("/api/enrollments/total-revenue")
+    Double getTotalRevenue();
+
     @GetMapping("/api/enrollments/distinct-users")
     Long getDistinctUserCount();
 

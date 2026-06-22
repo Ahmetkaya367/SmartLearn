@@ -25,3 +25,8 @@ bin/
 .env
 .env
 .env
+
+# Backup & Large Files
+*.sql
+*.tar
+*.tar.gz

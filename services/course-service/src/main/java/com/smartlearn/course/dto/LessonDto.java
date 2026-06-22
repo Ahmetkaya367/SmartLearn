@@ -20,4 +20,5 @@ public class LessonDto {
     private String type; // video, article, quiz
     private int orderIndex;
     private boolean isPreview;
+    private int version;
 }

@@ -57,14 +57,13 @@ public class StatsController {
             }
             log.info("Distinct enrolled users from enrollment-service: {}", distinctUsers);
 
-            // Gelir henüz gerçek olarak hesaplanmıyor; placeholder: 50 * toplam enrollment
-            Long totalEnrollments = enrollmentClient.getTotalEnrollments();
-            if (totalEnrollments == null) {
-                log.warn("Enrollment service unavailable for totalEnrollments, using 0");
-                totalEnrollments = 0L;
+            // Gerçek gelir: Her kayıt anındaki paid_price toplamı (enrollmentdb)
+            Double totalRevenue = enrollmentClient.getTotalRevenue();
+            if (totalRevenue == null) {
+                log.warn("Enrollment service unavailable for total revenue, using 0");
+                totalRevenue = 0.0;
             }
-            double totalRevenue = totalEnrollments * 49.99;
-            log.info("Calculated total revenue: {}", totalRevenue);
+            log.info("Real total revenue from paid_price sum: {}", totalRevenue);
 
             // Cevap için en son 5 kullanıcı
             List<AdminStatsResponse.RecentUser> recentUsers = userProfileRepository.findAll().stream()

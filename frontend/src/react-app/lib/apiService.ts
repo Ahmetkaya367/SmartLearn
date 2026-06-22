@@ -527,6 +527,15 @@ export const apiService = {
         return await response.json();
     },
 
+    resetLessonProgress: async (lessonId: string) => {
+        const response = await fetch(`${API_URL}/api/enrollments/lesson/${lessonId}/progress`, {
+            method: "DELETE",
+            headers: getHeaders()
+        });
+        if (!response.ok) throw new Error("Could not reset lesson progress");
+        return true;
+    },
+
     getEnrollmentProgress: async (enrollmentId: string) => {
         const response = await fetch(`${API_URL}/api/enrollments/${enrollmentId}/progress`, {
             headers: getHeaders()
@@ -551,10 +560,13 @@ export const apiService = {
         return await response.json();
     },
 
-    uploadCertificate: async (enrollmentId: string, file: File) => {
+    uploadCertificate: async (enrollmentId: string, file: File, certificateCode?: string) => {
         const formData = new FormData();
         formData.append("file", file);
         formData.append("enrollmentId", enrollmentId);
+        if (certificateCode) {
+            formData.append("certificateCode", certificateCode);
+        }
 
         const token = localStorage.getItem("auth_token");
         const headers: HeadersInit = {
@@ -568,6 +580,12 @@ export const apiService = {
         });
 
         if (!response.ok) throw new Error("Sertifika yüklenemedi.");
+        return await response.json();
+    },
+
+    verifyCertificate: async (code: string) => {
+        const response = await fetch(`${API_URL}/api/enrollments/certificates/verify/${code}`);
+        if (!response.ok) throw new Error("Sertifika doğrulanamadı.");
         return await response.json();
     },
 

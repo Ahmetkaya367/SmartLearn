@@ -64,7 +64,7 @@ export default function CourseDetail() {
             ]);
             setInstructorStats(stats);
             setOtherCourses(courses || []);
-          } catch (_) {}
+          } catch (_) { }
         }
 
         if (user?.role === "student") {
@@ -73,7 +73,7 @@ export default function CourseDetail() {
             if (stats?.enrolledCourses?.includes(id)) {
               setIsEnrolled(true);
             }
-          } catch (_) {}
+          } catch (_) { }
         }
       } catch (error) {
         console.error("Failed to fetch course details:", error);
@@ -120,9 +120,6 @@ export default function CourseDetail() {
     );
   }
 
-  const discount = course.originalPrice && course.originalPrice > course.price
-    ? Math.round(((course.originalPrice - course.price) / course.originalPrice) * 100)
-    : 0;
 
   const instructorName = course.instructor || "Eğitmen";
 
@@ -193,7 +190,7 @@ export default function CourseDetail() {
             {/* Satın Alma Kutusu */}
             <div className="relative">
               <Card className="p-6 sticky top-24 border-slate-700 bg-slate-800/50 backdrop-blur-xl shadow-2xl">
-                <div 
+                <div
                   className="aspect-video rounded-lg overflow-hidden mb-6 relative group cursor-pointer"
                   onClick={() => setShowPreview(true)}
                 >
@@ -233,14 +230,6 @@ export default function CourseDetail() {
                     <>
                       <div className="flex items-baseline gap-2">
                         <span className="text-3xl font-bold text-white">{course.price} ₺</span>
-                        {course.originalPrice > course.price && (
-                          <>
-                            <span className="text-lg text-slate-400 line-through">{course.originalPrice} ₺</span>
-                            <Badge variant="destructive" className="bg-red-500 text-white border-0">
-                              %{discount} İNDİRİM
-                            </Badge>
-                          </>
-                        )}
                       </div>
 
                       <div className="space-y-3">
@@ -419,7 +408,7 @@ export default function CourseDetail() {
                           <p className="text-muted-foreground font-medium mt-1">{course.instructorTitle}</p>
                         )}
                       </div>
-                      
+
                       <div className="pt-4 border-t border-muted">
                         <h4 className="font-semibold text-foreground mb-4 flex items-center gap-2">
                           <BookOpen className="w-4 h-4 text-primary" />
@@ -502,7 +491,7 @@ export default function CourseDetail() {
           </div>
         </div>
       </div>
-      
+
       {/* Önizleme Modalı */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
         <DialogContent className="max-w-4xl p-0 overflow-hidden bg-slate-900 border-slate-800">
@@ -512,12 +501,12 @@ export default function CourseDetail() {
               Kurs Önizleme: {course.title}
             </DialogTitle>
           </DialogHeader>
-          
+
           <div className="aspect-video w-full mt-14 flex items-center justify-center bg-black">
             {course.videoPreviewUrl ? (
-              <video 
-                src={course.videoPreviewUrl} 
-                controls 
+              <video
+                src={course.videoPreviewUrl}
+                controls
                 className="w-full h-full"
                 autoPlay
               >

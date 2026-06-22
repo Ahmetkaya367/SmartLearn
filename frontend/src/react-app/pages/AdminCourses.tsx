@@ -7,7 +7,10 @@ import { Badge } from "@/react-app/components/ui/badge";
 import { Search, CheckCircle, XCircle, Eye } from "lucide-react";
 import { apiService } from "@/react-app/lib/apiService";
 
+import { useNavigate } from "react-router";
+
 export default function AdminCourses() {
+    const navigate = useNavigate();
     const [courses, setCourses] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
@@ -103,7 +106,7 @@ export default function AdminCourses() {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2 self-end md:self-center">
-                                    <Button variant="outline" size="sm" className="gap-2">
+                                    <Button variant="outline" size="sm" className="gap-2" onClick={() => navigate(`/learning/${c.id}`)}>
                                         <Eye className="w-4 h-4" /> İncele
                                     </Button>
                                     {c.status !== 'PUBLISHED' && (

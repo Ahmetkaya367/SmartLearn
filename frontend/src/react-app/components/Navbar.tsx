@@ -34,6 +34,11 @@ export function Navbar() {
             <Button variant="ghost" className="text-foreground hover:text-primary" asChild>
               <Link to="/#popular-categories">Kategoriler</Link>
             </Button>
+            {!isAuthenticated && (
+              <Button variant="ghost" className="text-foreground hover:text-primary" asChild>
+                <Link to="/verify">Sertifika Doğrula</Link>
+              </Button>
+            )}
             {isAuthenticated && (
               <Button variant="ghost" className="text-foreground hover:text-primary font-semibold" asChild>
                 <Link to={`/${user?.role}`}>Panel</Link>

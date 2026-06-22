@@ -60,8 +60,13 @@ export default function StudentCertificates() {
                                 >
                                     <Download className="w-4 h-4" /> İndir
                                 </Button>
-                                <Button variant="ghost" size="sm" className="gap-2">
-                                    <Share2 className="w-4 h-4" /> Paylaş
+                                <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="gap-2"
+                                    onClick={() => window.open(`/verify/${cert.certificateCode}`, '_blank')}
+                                >
+                                    <Share2 className="w-4 h-4" /> Doğrula
                                 </Button>
                             </div>
                         </Card>

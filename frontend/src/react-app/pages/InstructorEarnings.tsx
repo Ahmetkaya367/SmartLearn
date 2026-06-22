@@ -39,6 +39,7 @@ export default function InstructorEarnings() {
                 if (data) {
                     const commissionRate = settings?.platform_commission ? Number(settings.platform_commission) : 15;
                     data.availableWithdrawal = data.totalBalance * ((100 - commissionRate) / 100);
+                    data.commissionRate = commissionRate;
                 }
                 
                 setStats(data);
@@ -68,6 +69,9 @@ export default function InstructorEarnings() {
                 <Card className="p-6 space-y-2">
                     <p className="text-sm text-muted-foreground">Çekilebilir Tutar</p>
                     {loading ? <Skeleton className="h-10 w-32" /> : <p className="text-3xl font-bold text-foreground">{stats?.availableWithdrawal.toLocaleString()} ₺</p>}
+                    {!loading && stats?.commissionRate !== undefined && (
+                        <p className="text-[10px] text-muted-foreground">% {stats.commissionRate} platform komisyonu düşülmüştür.</p>
+                    )}
                     <Button variant="link" className="p-0 h-auto text-xs font-semibold">Şimdi Para Çek</Button>
                 </Card>
                 <Card className="p-6 space-y-2">

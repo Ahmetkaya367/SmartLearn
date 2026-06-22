@@ -34,18 +34,23 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
             String method = request.getMethod().name();
 
             // Skip authentication for public endpoints
-            // GET /api/courses and GET /api/courses/{id} are public
-            // BUT GET /api/courses/all is NOT public
-            boolean isPublicCoursePath = path.startsWith("/api/courses") 
-                && !path.equals("/api/courses/all") 
-                && !path.startsWith("/api/courses/instructor")
-                && !path.startsWith("/api/courses/me")
-                && method.equals("GET");
+            // GET /api/courses, /api/courses/{id}, /api/courses/all are public
+            boolean isPublicCoursePath = path.startsWith("/api/courses")
+                    && !path.startsWith("/api/courses/me")
+                    && (!path.startsWith("/api/courses/instructor")
+                            || path.matches("^/api/courses/instructor/[^/]+(/.*)?$"))
+                    && method.equals("GET");
 
             boolean isAssistantPath = path.startsWith("/api/assistant");
             boolean isEnrollmentUploadPath = path.startsWith("/api/enrollments/uploads") && method.equals("GET");
+            boolean isPublicReviewPath = path.startsWith("/api/reviews/course/") && method.equals("GET");
+            boolean isPublicEnrollmentPath = (path.matches("^/api/enrollments/course/[^/]+/count$")
+                    || path.matches("^/api/enrollments/instructor/[^/]+/stats$")
+                    || path.matches("^/api/enrollments/instructor/[^/]+/students$")) && method.equals("GET");
+            boolean isPublicCertificateVerifyPath = path.startsWith("/api/enrollments/certificates/verify/") && method.equals("GET");
 
-            if (isPublicCoursePath || isAssistantPath || isEnrollmentUploadPath) {
+            if (isPublicCoursePath || isAssistantPath || isEnrollmentUploadPath || isPublicReviewPath
+                    || isPublicEnrollmentPath || isPublicCertificateVerifyPath) {
                 return chain.filter(exchange);
             }
 
@@ -66,7 +71,7 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
             try {
                 String userId = jwtUtils.extractUserId(token);
                 String role = jwtUtils.extractRole(token);
-                
+
                 if (userId == null || userId.isEmpty()) {
                     log.error("UserId missing in token. Rejecting request.");
                     return onError(exchange, "Invalid Token: Missing User Info", HttpStatus.UNAUTHORIZED);

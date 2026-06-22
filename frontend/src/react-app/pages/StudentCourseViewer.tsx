@@ -26,8 +26,22 @@ import {
   Lock,
 } from "lucide-react";
 import { apiService } from "@/react-app/lib/apiService";
+import { useAuthStore } from "@/react-app/store/useAuthStore";
 
 const API_URL = "http://127.0.0.1:8080";
+
+// DB'den gelen ham saniye (int/float) veya string olabilir
+const formatDuration = (raw: string | number | undefined | null): string => {
+  if (raw === undefined || raw === null || raw === "") return "—";
+  const num = typeof raw === "number" ? raw : parseFloat(raw as string);
+  if (isNaN(num) || num <= 0) return "—";
+  const totalSecs = Math.floor(num);
+  const mins = Math.floor(totalSecs / 60);
+  const secs = totalSecs % 60;
+  if (mins === 0) return `${secs}sn`;
+  if (secs === 0) return `${mins}dk`;
+  return `${mins}dk ${secs}sn`;
+};
 
 interface Lesson {
   id: string;
@@ -47,6 +61,8 @@ interface Section {
 
 export default function StudentCourseViewer() {
   const { id } = useParams();
+  const { user } = useAuthStore();
+  const isPreview = user?.role === "instructor" || user?.role === "admin";
   const [course, setCourse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
@@ -218,7 +234,7 @@ export default function StudentCourseViewer() {
         video.currentTime = Math.max(0, video.currentTime - 10);
       } else if (e.code === 'ArrowRight') {
         const nextTime = video.currentTime + 10;
-        if (nextTime <= lastProgressUpdate.current + 2) {
+        if (isPreview || nextTime <= lastProgressUpdate.current + 2) {
           video.currentTime = nextTime;
         }
       } else if (e.code === 'Space') {
@@ -261,7 +277,7 @@ export default function StudentCourseViewer() {
           video.dataset.lastApiCall = now.toString();
           apiService.updateLessonProgress(enrollmentId, activeLesson.id, currentSeconds, false).then(res => {
             if (res?.progressPercent !== undefined) {
-              setOverallProgress(prev => Math.max(prev, res.progressPercent));
+              setOverallProgress(res.progressPercent);
             }
           });
         }
@@ -346,7 +362,9 @@ export default function StudentCourseViewer() {
           <BookOpen className="w-16 h-16 mx-auto mb-4 text-white/40" />
           <h2 className="text-2xl font-bold mb-2">Course not found</h2>
           <Button asChild className="mt-4">
-            <Link to="/student">Back to My Learning</Link>
+            <Link to={isPreview ? (user?.role === "admin" ? "/admin/courses" : "/instructor/my-courses") : "/student"}>
+              {isPreview ? "Kurslara Dön" : "Öğrenimime Dön"}
+            </Link>
           </Button>
         </div>
       </div>
@@ -366,9 +384,9 @@ export default function StudentCourseViewer() {
           asChild
           className="text-white/70 hover:text-white hover:bg-white/10 gap-1"
         >
-          <Link to="/student">
+          <Link to={isPreview ? (user?.role === "admin" ? "/admin/courses" : "/instructor/my-courses") : "/student"}>
             <ChevronLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Öğrenimim</span>
+            <span className="hidden sm:inline">{isPreview ? "Kurslara Dön" : "Öğrenimim"}</span>
           </Link>
         </Button>
 
@@ -440,7 +458,7 @@ export default function StudentCourseViewer() {
                           const t = (val / 100) * videoRef.current.duration;
                           
                           // İLERİ SARMA ENGELİ: 2 saniye tolerans (sıkılaştırıldı)
-                          if (t > lastProgressUpdate.current + 2) {
+                          if (!isPreview && t > lastProgressUpdate.current + 2) {
                               return;
                           }
                           
@@ -529,7 +547,7 @@ export default function StudentCourseViewer() {
                   <div className="flex items-center gap-4 text-sm text-white/50">
                     <div className="flex items-center gap-1.5">
                       <Clock className="w-4 h-4" />
-                      <span>{activeLesson.duration || "—"}</span>
+                      <span>{formatDuration(activeLesson.duration) || "—"}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <FileText className="w-4 h-4" />
@@ -642,16 +660,18 @@ export default function StudentCourseViewer() {
                         // 1. Ders her zaman açık.
                         // Diğer dersler ise ancak bir önceki ders "Tamamlandı" (completedLessons içinde) ise açılır.
                         let isLocked = false;
-                        if (idx === 0 && lessonIdx === 0) {
-                            isLocked = false;
-                        } else {
-                            // Tüm dersleri düz bir listede hayal et
-                            const allLessons = getAllLessons();
-                            const currentIdxInAll = allLessons.findIndex(x => x.lesson.id === lesson.id);
-                            if (currentIdxInAll > 0) {
-                                const prevLessonId = allLessons[currentIdxInAll - 1].lesson.id;
-                                isLocked = !completedLessons.has(prevLessonId);
-                            }
+                        if (!isPreview) {
+                          if (idx === 0 && lessonIdx === 0) {
+                              isLocked = false;
+                          } else {
+                              // Tüm dersleri düz bir listede hayal et
+                              const allLessons = getAllLessons();
+                              const currentIdxInAll = allLessons.findIndex(x => x.lesson.id === lesson.id);
+                              if (currentIdxInAll > 0) {
+                                  const prevLessonId = allLessons[currentIdxInAll - 1].lesson.id;
+                                  isLocked = !completedLessons.has(prevLessonId);
+                              }
+                          }
                         }
 
                         return (
@@ -682,7 +702,7 @@ export default function StudentCourseViewer() {
                               <p className={`text-xs font-medium truncate ${isActive ? "text-indigo-300" : isLocked ? "text-white/30" : "text-white/70"}`}>
                                 {lesson.title}
                               </p>
-                              <p className="text-white/30 text-xs mt-0.5">{lesson.duration || "—"}</p>
+                              <p className="text-white/30 text-xs mt-0.5">{formatDuration(lesson.duration)}</p>
                             </div>
                           </button>
                         );

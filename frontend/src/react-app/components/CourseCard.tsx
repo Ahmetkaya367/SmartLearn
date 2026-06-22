@@ -9,9 +9,6 @@ interface CourseCardProps {
 }
 
 export function CourseCard({ course }: CourseCardProps) {
-  const discount = course.originalPrice
-    ? Math.round(((course.originalPrice - course.price) / course.originalPrice) * 100)
-    : 0;
 
   return (
     <Link to={`/courses/${course.id}`}>
@@ -23,16 +20,7 @@ export function CourseCard({ course }: CourseCardProps) {
           alt={course.title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
-        {course.isBestseller && (
-          <Badge className="absolute top-3 left-3 bg-amber-500 hover:bg-amber-600 text-white border-0">
-            Bestseller
-          </Badge>
-        )}
-        {discount > 0 && (
-          <Badge className="absolute top-3 right-3 bg-red-500 hover:bg-red-600 text-white border-0">
-            {discount}% OFF
-          </Badge>
-        )}
+
         {course.status === 'ARCHIVED' && (
           <Badge variant="destructive" className="absolute bottom-3 right-3">
             Yayından Kaldırıldı
@@ -82,11 +70,6 @@ export function CourseCard({ course }: CourseCardProps) {
         {/* Price */}
         <div className="flex items-center gap-2">
           <span className="text-2xl font-bold text-foreground">{course.price} ₺</span>
-          {course.originalPrice && (
-            <span className="text-sm text-muted-foreground line-through">
-              {course.originalPrice} ₺
-            </span>
-          )}
         </div>
       </div>
     </Card>

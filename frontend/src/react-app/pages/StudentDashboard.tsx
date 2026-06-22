@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@/react-app/components/ui/card";
 import { Button } from "@/react-app/components/ui/button";
 import { Skeleton } from "@/react-app/components/ui/skeleton";
-import { BookOpen, Clock, Award, Play, Star, MessageSquare } from "lucide-react";
+import { BookOpen, Clock, Award, Play, Star, MessageSquare, CheckCircle2 } from "lucide-react";
 import { apiService } from "@/react-app/lib/apiService";
 import { Progress } from "@/react-app/components/ui/progress";
 import { Link } from "react-router";
@@ -133,12 +133,17 @@ export default function StudentDashboard() {
 
           <Card className="p-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Clock className="w-6 h-6 text-primary" />
+              <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center">
+                <CheckCircle2 className="w-6 h-6 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{stats?.learningTime || "0dk"}</p>
-                <p className="text-sm text-muted-foreground">İzlenen Süre</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {stats?.inProgress?.reduce((sum: number, item: any) => {
+                    const total = item.progress === 100 ? 1 : 0;
+                    return sum + total;
+                  }, 0) ?? 0}
+                </p>
+                <p className="text-sm text-muted-foreground">Tamamlanan Ders</p>
               </div>
             </div>
           </Card>

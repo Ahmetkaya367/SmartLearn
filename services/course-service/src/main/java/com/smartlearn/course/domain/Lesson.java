@@ -38,6 +38,10 @@ public class Lesson {
     @Builder.Default
     private boolean isPreview = false;
 
+    @Column(name = "version")
+    @Builder.Default
+    private Integer version = 1;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "section_id", nullable = false)
     private Section section;

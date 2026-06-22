@@ -28,7 +28,6 @@ public class InstructorEarningsController {
         log.info("Request: Earnings history for instructor {}", instructorId);
         
         try {
-            // 1. Kurs Listesi
             List<String> courseIds = courseClient.getInstructorCourseIds(instructorId.toString());
             if (courseIds == null || courseIds.isEmpty()) {
                 return ResponseEntity.ok(createEmptyResponse());
@@ -38,80 +37,70 @@ public class InstructorEarningsController {
                     .map(UUID::fromString)
                     .collect(Collectors.toList());
 
-            // 2. Kayıtları çek
             List<Enrollment> enrollments = enrollmentRepository.findAllByCourseIdIn(courseUUIDs);
-            enrollments.sort((e1, e2) -> e2.getEnrolledAt().compareTo(e1.getEnrolledAt()));
+            enrollments.sort((e1, e2) -> {
+                if (e1.getEnrolledAt() == null) return 1;
+                if (e2.getEnrolledAt() == null) return -1;
+                return e2.getEnrolledAt().compareTo(e1.getEnrolledAt());
+            });
 
-            // 3. Hesaplama Parametreleri
-            Map<UUID, Map<String, Object>> courseCache = new HashMap<>();
+            // Cache course titles (only title needed now — price comes from paid_price)
+            Map<UUID, String> courseTitleCache = new HashMap<>();
+
             BigDecimal totalBalance = BigDecimal.ZERO;
             BigDecimal thisMonthRevenue = BigDecimal.ZERO;
             long newEnrollmentsCount = 0;
-            
-            // Hassas Eşik: 31 gün öncesi
-            LocalDateTime threshold = LocalDateTime.now().minusDays(31).withHour(0).withMinute(0);
-            log.info("System Time: {}, Threshold: {}", LocalDateTime.now(), threshold);
+
+            LocalDateTime startOfMonth = LocalDateTime.now()
+                    .withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
 
             List<Map<String, Object>> transactions = new ArrayList<>();
+
             for (Enrollment enrollment : enrollments) {
+                // Use the price stored AT PURCHASE TIME — never changes
+                BigDecimal price = BigDecimal.valueOf(enrollment.getPaidPrice());
+
+                // Fetch course title (cached)
+                String courseTitle = courseTitleCache.computeIfAbsent(enrollment.getCourseId(), cid -> {
+                    try {
+                        Map<String, Object> course = courseClient.getCourseById(cid.toString());
+                        return course != null ? (String) course.get("title") : "Bilinmeyen Kurs";
+                    } catch (Exception ex) {
+                        return "Bilinmeyen Kurs";
+                    }
+                });
+
                 Map<String, Object> tx = new HashMap<>();
                 tx.put("id", enrollment.getId().toString());
-                tx.put("date", enrollment.getEnrolledAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
-                tx.put("status", "Tamamlandı");
-
-                // Kurs Detayı (Fiyat ve Başlık)
-                Map<String, Object> course = courseCache.computeIfAbsent(enrollment.getCourseId(), 
-                    id -> courseClient.getCourseById(id.toString()));
-                
-                BigDecimal price = BigDecimal.ZERO;
-                if (course != null) {
-                    tx.put("course", course.get("title"));
-                    Object p = course.get("price");
-                    if (p != null) {
-                        try {
-                            price = new BigDecimal(p.toString());
-                        } catch (Exception ex) {
-                            log.error("Price parse error: {}", p);
-                        }
-                    }
-                } else {
-                    tx.put("course", "Unknown (" + enrollment.getCourseId() + ")");
-                }
-                
+                tx.put("course", courseTitle);
                 tx.put("amount", price.doubleValue());
+                tx.put("date", enrollment.getEnrolledAt() != null
+                        ? enrollment.getEnrolledAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+                        : "n/a");
+                tx.put("status", "Tamamlandı");
                 transactions.add(tx);
 
-                // Toplam Bakiye
                 totalBalance = totalBalance.add(price);
 
-                // Aylık Kontrol: Eğer tarih eşikten sonraysa VEYA yıl/ay bugünle aynıysa dahil et
-                boolean isThisMonth = enrollment.getEnrolledAt().isAfter(threshold) || 
-                                     (enrollment.getEnrolledAt().getYear() == LocalDateTime.now().getYear() && 
-                                      enrollment.getEnrolledAt().getMonth() == LocalDateTime.now().getMonth());
+                boolean isThisMonth = enrollment.getEnrolledAt() != null
+                        && !enrollment.getEnrolledAt().isBefore(startOfMonth);
 
                 if (isThisMonth) {
                     thisMonthRevenue = thisMonthRevenue.add(price);
                     newEnrollmentsCount++;
-                    log.info("MATCH: {} added to monthly. Date: {}", price, enrollment.getEnrolledAt());
-                } else {
-                    log.info("NO MATCH: {} not in monthly. Date: {}", price, enrollment.getEnrolledAt());
                 }
             }
 
             Map<String, Object> response = new HashMap<>();
             response.put("totalBalance", totalBalance.doubleValue());
-            response.put("availableWithdrawal", totalBalance.multiply(new BigDecimal("0.7")).doubleValue());
+            response.put("availableWithdrawal", totalBalance.multiply(new BigDecimal("0.85")).doubleValue());
             response.put("thisMonthRevenue", thisMonthRevenue.doubleValue());
             response.put("newEnrollmentsCount", newEnrollmentsCount);
             response.put("transactions", transactions);
-            
-            // Debugging
-            response.put("_sys_time", LocalDateTime.now().toString());
-            response.put("_threshold", threshold.toString());
 
-            log.info("Response Stats - Total: {}, Monthly: {}, Count: {}", totalBalance, thisMonthRevenue, newEnrollmentsCount);
-
+            log.info("Earnings - Total: {}, Monthly: {}, Count: {}", totalBalance, thisMonthRevenue, newEnrollmentsCount);
             return ResponseEntity.ok(response);
+
         } catch (Exception e) {
             log.error("Earnings API Error", e);
             return ResponseEntity.internalServerError().build();

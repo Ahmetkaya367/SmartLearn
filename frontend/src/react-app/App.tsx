@@ -35,6 +35,7 @@ import InstructorProfile from "@/react-app/pages/InstructorProfile";
 import StudentCertificates from "@/react-app/pages/StudentCertificates";
 import StudentCourseViewer from "@/react-app/pages/StudentCourseViewer";
 import StudentProfile from "@/react-app/pages/StudentProfile";
+import CertificateVerify from "@/react-app/pages/CertificateVerify";
 
 // Info Pages
 import PrivacyPolicy from "@/react-app/pages/info/PrivacyPolicy";
@@ -60,7 +61,9 @@ export default function App() {
           <Route path="/courses/:id" element={<CourseDetailPage />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/ai-assistant" element={<AIAssistantPage />} />
-          <Route path="/learning/:id" element={<ProtectedRoute allowedRoles={["student"]}><StudentCourseViewer /></ProtectedRoute>} />
+          <Route path="/verify/:code" element={<CertificateVerify />} />
+          <Route path="/verify" element={<CertificateVerify />} />
+          <Route path="/learning/:id" element={<ProtectedRoute allowedRoles={["student", "instructor", "admin"]}><StudentCourseViewer /></ProtectedRoute>} />
           
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />

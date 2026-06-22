@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/react-app/components
 import { Badge } from "@/react-app/components/ui/badge";
 import { Save, Upload, Plus, Trash, PlayCircle, Loader2, Video } from "lucide-react";
 import { apiService } from "@/react-app/lib/apiService";
+import { toast } from "sonner";
 
 export default function InstructorEditCourse() {
     const { id } = useParams();
@@ -174,6 +175,19 @@ export default function InstructorEditCourse() {
             
             const res = await apiService.uploadMedia(file);
             updateLesson(sectionIndex, lessonIndex, "videoUrl", res.url);
+
+            // Eğer bu önceden var olan bir dersse ve videosu değiştiriliyorsa,
+            // öğrencilerin bu ders için olan izleme ilerlemesini (LessonProgress) sıfırlıyoruz.
+            const lessonId = courseData.sections[sectionIndex].lessons[lessonIndex].id;
+            if (lessonId && !lessonId.startsWith('new-')) {
+                try {
+                    await apiService.resetLessonProgress(lessonId);
+                    toast.success("Video güncellendi, bu ders için öğrenci ilerlemeleri sıfırlandı.");
+                } catch (resetErr) {
+                    console.error("Failed to reset lesson progress", resetErr);
+                }
+            }
+
         } catch (err) {
             console.error("Lesson video upload failed", err);
             alert("Ders videosu yüklenemedi.");
@@ -198,6 +212,10 @@ export default function InstructorEditCourse() {
                     <p className="text-muted-foreground">Kurs bilgilerinizi, medya dosyalarınızı ve müfredatınızı güncelleyin.</p>
                 </div>
                 <div className="flex gap-3">
+                    <Button variant="secondary" onClick={() => navigate(`/learning/${id}`)}>
+                        <PlayCircle className="w-4 h-4 mr-2" />
+                        Önizle
+                    </Button>
                     <Button variant="outline" onClick={() => navigate("/instructor/my-courses")}>İptal</Button>
                     <Button onClick={handleSave} disabled={saving} className="gap-2">
                         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
@@ -322,7 +340,14 @@ export default function InstructorEditCourse() {
                                         onChange={(e) => updateSectionTitle(sIdx, e.target.value)} 
                                         placeholder="Bölüm Başlığı"
                                     />
-                                    <Button variant="ghost" size="icon" onClick={() => removeSection(sIdx)} className="text-destructive">
+                                    <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        onClick={() => removeSection(sIdx)} 
+                                        className="text-destructive"
+                                        disabled={section.lessons?.some((l: any) => l.videoUrl)}
+                                        title={section.lessons?.some((l: any) => l.videoUrl) ? "İçinde video bulunan bir bölümü silemezsiniz" : "Bölümü Sil"}
+                                    >
                                         <Trash className="w-4 h-4" />
                                     </Button>
                                 </div>
@@ -338,16 +363,34 @@ export default function InstructorEditCourse() {
                                                 placeholder="Ders Başlığı" 
                                             />
                                             {lesson.videoUrl ? (
-                                                <Badge className="bg-emerald-500 hover:bg-emerald-600 gap-1"><Video className="w-3 h-3"/> Yüklendi</Badge>
+                                                <div className="flex items-center gap-2">
+                                                    <Badge className="bg-emerald-500 hover:bg-emerald-600 gap-1">
+                                                        <Video className="w-3 h-3"/> Yüklendi
+                                                    </Badge>
+                                                    <div className="relative group overflow-hidden" title="Bu dersi silemezsiniz, ancak videosunu değiştirebilirsiniz">
+                                                        <input 
+                                                            type="file" 
+                                                            accept="video/mp4,video/webm" 
+                                                            onChange={(e) => handleLessonVideoUpload(sIdx, lIdx, e)} 
+                                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+                                                            title="Yerine koymak istediğiniz yeni videoyu seçin"
+                                                        />
+                                                        <Button variant="outline" size="sm" className="h-8 gap-1 text-orange-500 border-orange-200 hover:bg-orange-50 hover:text-orange-600">
+                                                            <Upload className="w-3 h-3" /> Değiştir
+                                                        </Button>
+                                                    </div>
+                                                </div>
                                             ) : (
-                                                <div className="relative group overflow-hidden">
-                                                    <input type="file" accept="video/mp4,video/webm" onChange={(e) => handleLessonVideoUpload(sIdx, lIdx, e)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-                                                    <Button variant="secondary" size="sm" className="h-8 gap-1"><Upload className="w-3 h-3" /> Video Yükle</Button>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="relative group overflow-hidden">
+                                                        <input type="file" accept="video/mp4,video/webm" onChange={(e) => handleLessonVideoUpload(sIdx, lIdx, e)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                                                        <Button variant="secondary" size="sm" className="h-8 gap-1"><Upload className="w-3 h-3" /> Video Yükle</Button>
+                                                    </div>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeLesson(sIdx, lIdx)}>
+                                                        <Trash className="w-3 h-3" />
+                                                    </Button>
                                                 </div>
                                             )}
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeLesson(sIdx, lIdx)}>
-                                                <Trash className="w-3 h-3" />
-                                            </Button>
                                         </div>
                                     ))}
                                     <Button variant="outline" size="sm" className="gap-2 w-full border-dashed" onClick={() => addLesson(sIdx)}>

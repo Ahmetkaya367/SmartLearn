@@ -33,6 +33,10 @@ public class LessonProgress {
     @Builder.Default
     private boolean isCompleted = false;
 
+    @Column(name = "lesson_version")
+    @Builder.Default
+    private int lessonVersion = 1;
+
     @Column(name = "last_updated_at")
     private LocalDateTime lastUpdatedAt;
 }

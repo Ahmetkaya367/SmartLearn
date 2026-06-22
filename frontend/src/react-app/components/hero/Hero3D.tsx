@@ -37,7 +37,7 @@ export default function Hero3D() {
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                             </span>
-                            New: Yapay Zeka Destekli Öğrenme Yolları
+                            Yeni: Yapay Zeka Destekli Öğrenme Yolları
                         </div>
 
                         <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-foreground leading-[1.1] mb-6">
@@ -48,7 +48,7 @@ export default function Hero3D() {
                         </h1>
 
                         <p className="text-lg sm:text-xl text-muted-foreground mb-8 max-w-lg leading-relaxed">
-                            Uzman eğitmenlerden dünya standartlarında kurslarla potansiyelinizi açığa çıkarın. 
+                            Uzman eğitmenlerden dünya standartlarında kurslarla potansiyelinizi açığa çıkarın.
                             Premium ve sürükleyici bir öğrenme ortamında yeni beceriler kazanın.
                         </p>
 
@@ -74,7 +74,7 @@ export default function Hero3D() {
                                     {userCount > 0 ? `+${userCount}` : '+2k'}
                                 </div>
                             </div>
-                            <p>{userCount > 0 ? `${userCount} öğrencinin tercihi` : "2.000'den fazla öğrencinin tercihi"}</p>
+                            <p>{userCount > 0 ? `${userCount} kullanıcının tercihi` : "2.000'den fazla kullanıcının tercihi"}</p>
                         </div>
                     </motion.div>
                 </div>

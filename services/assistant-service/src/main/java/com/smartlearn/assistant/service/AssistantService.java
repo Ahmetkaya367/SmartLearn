@@ -26,7 +26,12 @@ public class AssistantService {
     @Value("${spring.ai.google.genai.api-key:}")
     private String apiKey;
 
-    private static final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemma-3-4b-it:generateContent";
+    @Value("${spring.ai.google.genai.chat.options.model:gemini-1.5-flash}")
+    private String modelName;
+
+    private String getApiUrl() {
+        return "https://generativelanguage.googleapis.com/v1beta/models/" + modelName + ":generateContent";
+    }
 
     public AssistantService(CourseClient courseClient, EnrollmentClient enrollmentClient) {
         this.courseClient = courseClient;
@@ -158,7 +163,7 @@ public class AssistantService {
             requestBody.put("contents", Collections.singletonList(content));
 
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
-            Map<String, Object> response = restTemplate.postForObject(GEMINI_API_URL, entity, Map.class);
+            Map<String, Object> response = restTemplate.postForObject(getApiUrl(), entity, Map.class);
 
             if (response != null && response.containsKey("candidates")) {
                 List<Map<String, Object>> candidates = (List<Map<String, Object>>) response.get("candidates");

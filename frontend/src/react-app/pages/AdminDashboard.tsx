@@ -7,13 +7,18 @@ import { apiService } from "@/react-app/lib/apiService";
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<any>(null);
+  const [settings, setSettings] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const data = await apiService.getAdminStats();
+        const [data, sysSettings] = await Promise.all([
+            apiService.getAdminStats(),
+            apiService.getSystemSettings()
+        ]);
         setStats(data);
+        setSettings(sysSettings);
       } catch (error) {
         console.error("Failed to fetch admin stats:", error);
       } finally {
@@ -91,14 +96,20 @@ export default function AdminDashboard() {
             </div>
           </Card>
 
+          {/* Büyüme Oranı Kartı yerine bunu koy */}
           <Card className="p-6">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-orange-500/10 flex items-center justify-center">
                 <TrendingUp className="w-6 h-6 text-orange-600 dark:text-orange-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{stats?.growthRate}%</p>
-                <p className="text-sm text-muted-foreground">Büyüme Oranı</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {(stats?.totalRevenue * (Number(settings?.platform_commission || 15) / 100)).toLocaleString('tr-TR', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                  })} ₺
+                </p>
+                <p className="text-sm text-muted-foreground">Admin Kazancı (%{settings?.platform_commission || 15})</p>
               </div>
             </div>
           </Card>
